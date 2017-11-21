@@ -193,9 +193,10 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables()
 
     @Unroll
-    def "task :#taskToRun #message with System.getenv('#env')"() {
+    def "task :#taskToRun #message with System.getenv('#env') #value"() {
         given:
-        environmentVariables.set(env, "TRUE")
+        environmentVariables.set(env, value)
+        environmentVariables
         fork = true
 
         when:
@@ -205,9 +206,12 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         result.wasSkipped(taskToRun) == skipped
 
         where:
-        taskToRun   | skipped | env
-        "coveralls" | false   | 'CI'
-        "coveralls" | true    | 'some value'
+        taskToRun   | skipped | env  | value
+        "coveralls" | false   | 'CI' | "TRUE"
+        "coveralls" | false   | 'CI' | "1"
+        "coveralls" | false   | 'CI' | "0"
+        "coveralls" | false   | 'CI' | "some value"
+        "coveralls" | true    | 'CI' | null
 
         message = skipped ? "should skip" : "shouldn't skip"
     }
