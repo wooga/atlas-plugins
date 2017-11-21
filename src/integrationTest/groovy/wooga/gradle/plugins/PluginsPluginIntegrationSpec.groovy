@@ -197,7 +197,6 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         given:
         environmentVariables.set(env, value)
         environmentVariables
-        fork = true
 
         when:
         def result = runTasksSuccessfully(taskToRun)
