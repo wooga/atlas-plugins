@@ -1,7 +1,7 @@
-### 0.9.0 - June 20 2017
+### 0.1.0 - November 21 2017
 
 * ![NEW] initial release
-* ![ADD] `net.wooga.unity` plugin
+* ![ADD] `net.wooga.plugins` plugin
 
 
 <!-- START icon Id's -->
