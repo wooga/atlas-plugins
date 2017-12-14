@@ -92,6 +92,7 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         "check"               | "releaseCheck"
         "assemble"            | "release"
         "publishPlugins"      | "final"
+        "publishPlugins"      | "candidate"
         "publishToMavenLocal" | "snapshot"
     }
 
