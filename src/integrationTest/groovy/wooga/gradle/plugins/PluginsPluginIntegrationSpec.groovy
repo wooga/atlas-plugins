@@ -17,7 +17,6 @@
 
 package wooga.gradle.plugins
 
-import nebula.plugin.release.ReleasePlugin
 import nebula.test.IntegrationSpec
 import org.ajoberstar.grgit.Grgit
 import org.junit.Rule
@@ -213,5 +212,46 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         "coveralls" | true    | 'CI' | null
 
         message = skipped ? "should skip" : "shouldn't skip"
+    }
+
+    def writeHelloWorldGroovy(String packageDotted, File baseDir = getProjectDir()) {
+        def path = 'src/main/groovy/' + packageDotted.replace('.', '/') + '/HelloWorld.groovy'
+        def javaFile = createFile(path, baseDir)
+        javaFile << """\
+            package ${packageDotted};
+        
+            class HelloWorld {
+            }
+            """.stripIndent()
+    }
+
+    def "task groovydoc should export to docs/api"() {
+        given: "a future output directory"
+        def docsExportDir = new File(projectDir, PluginsPlugin.DOC_EXPORT_DIR)
+        def classDoc = new File(docsExportDir, "net/wooga/plugins/test/HelloWorld.html")
+
+        assert !docsExportDir.exists()
+
+        and: "a temp java file"
+        fork = true
+        writeHelloWorldGroovy("net.wooga.plugins.test")
+
+        when:
+        runTasksSuccessfully('groovydoc')
+
+        then:
+        docsExportDir.exists()
+        classDoc.exists()
+    }
+
+    def "clean deletes docs/api"() {
+        def docsExportDir = new File(projectDir, PluginsPlugin.DOC_EXPORT_DIR)
+        docsExportDir.mkdirs()
+
+        when:
+        runTasksSuccessfully('clean')
+
+        then:
+        !docsExportDir.exists()
     }
 }
