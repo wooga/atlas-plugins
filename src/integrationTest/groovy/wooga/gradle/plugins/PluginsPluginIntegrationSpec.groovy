@@ -21,6 +21,7 @@ import nebula.test.IntegrationSpec
 import org.ajoberstar.grgit.Grgit
 import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
+import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 class PluginsPluginIntegrationSpec extends IntegrationSpec {
@@ -115,6 +116,9 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         "publishToMavenLocal" | "postRelease" | ["publishToMavenLocal", "postRelease"]
     }
 
+    //Test tasks hangs on windows systems
+    //Ignore for now
+    @IgnoreIf({ System.getProperty("os.name").toLowerCase().contains("windows") })
     @Unroll
     def "task :#taskToRun saves reports to #expectedOutput"() {
         given: "some dummy test"
@@ -137,6 +141,9 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         "integrationTest" | "build/reports/integrationTest"
     }
 
+    //Test tasks hangs on windows systems
+    //Ignore for now
+    @IgnoreIf({ System.getProperty("os.name").toLowerCase().contains("windows") })
     @Unroll
     def "task :#taskToRun saves jococo exec binaries to #expectedOutput"() {
         given: "some dummy test"
