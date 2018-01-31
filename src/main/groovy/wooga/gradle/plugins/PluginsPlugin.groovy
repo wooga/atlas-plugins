@@ -24,15 +24,20 @@ import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
+import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.reporting.ReportingExtension
 import org.gradle.api.specs.Spec
+import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskContainer
+import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.plugins.ide.idea.IdeaPlugin
@@ -42,10 +47,28 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.gradle.testing.jacoco.tasks.JacocoReportsContainer
 import org.kt3k.gradle.plugin.CoverallsPlugin
 
+/**
+ * This plugin is a convenient gradle plugin which which acts as a base for all atlas gradle plugins
+ *
+ * It will set repositories and dependencies to other gradle plugins that are needed for
+ * the development of other atlas gradle plugins
+ *
+ * - com.netflix.nebula:nebula-test
+ * - org.spockframework:spock-core
+ * - org.kt3k.gradle.plugin:coveralls-gradle-plugin
+ * - com.netflix.nebula:nebula-release-plugin
+ * - commons-io:commons-io
+ * - com.gradle.publish:plugin-publish-plugin
+ *
+ * The plugin will also hock up a complete build/publish lifecycle.
+ */
 class PluginsPlugin implements Plugin<Project> {
 
     static final String INTEGRATION_TEST_TASK_NAME = "integrationTest"
     private static final String INTEGRATION_TEST_SOURCE = "src/integrationTest/groovy"
+    static final String DOC_EXPORT_DIR = "docs/api"
+    static final String PUBLISH_GROOVY_DOCS_TASK_NAME = "publishGroovydocs"
+
 
     @Override
     void apply(Project project) {
@@ -53,11 +76,11 @@ class PluginsPlugin implements Plugin<Project> {
         project.pluginManager.with {
             apply(GroovyPlugin)
             apply(IdeaPlugin)
-            apply(MavenPublishPlugin)
             apply(PublishPlugin)
             apply(ReleasePlugin)
             apply(JacocoPlugin)
             apply(CoverallsPlugin)
+            apply(MavenPublishPlugin)
         }
 
         Task integrationTestTask = setupIntegrationTestTask(project, project.tasks)
@@ -67,6 +90,7 @@ class PluginsPlugin implements Plugin<Project> {
         configureJacocoTestReport(project, integrationTestTask, testTask)
         configureCoverallsTask(project)
         configureTaskRuntimeDependencies(project)
+        configureGradleDocsTask(project)
 
         project.repositories {
             jcenter()
@@ -89,6 +113,7 @@ class PluginsPlugin implements Plugin<Project> {
             compile 'com.gradle.publish:plugin-publish-plugin:0.9.9'
             compile 'com.netflix.nebula:nebula-release-plugin:5.0.0'
             compile 'commons-io:commons-io:2.5'
+            compile 'gradle.plugin.net.wooga.gradle:atlas-github:0.6.0'
 
             compile gradleApi()
             compile localGroovy()
@@ -101,6 +126,22 @@ class PluginsPlugin implements Plugin<Project> {
                 }
             }
         }
+    }
+
+    private static def configureGradleDocsTask(final Project project) {
+        TaskContainer tasks = project.tasks
+        Groovydoc groovyDocTask = tasks.getByName(GroovyPlugin.GROOVYDOC_TASK_NAME) as Groovydoc
+        groovyDocTask.use = true
+        groovyDocTask.footer = "Atlas API docs"
+
+        Sync publishGroovydocTask = tasks.create(PUBLISH_GROOVY_DOCS_TASK_NAME, Sync)
+        publishGroovydocTask.description = "Publish groovy docs to output directory ${DOC_EXPORT_DIR}"
+        publishGroovydocTask.group = PublishingPlugin.PUBLISH_TASK_GROUP
+        publishGroovydocTask.from(groovyDocTask.outputs.files)
+        publishGroovydocTask.destinationDir = project.file(DOC_EXPORT_DIR)
+
+        def publishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
+        publishTask.dependsOn(publishGroovydocTask)
     }
 
     private static configureTaskRuntimeDependencies(final Project project) {
@@ -116,6 +157,7 @@ class PluginsPlugin implements Plugin<Project> {
         Task publishToLocalMavenTask = tasks.getByName(MavenPublishPlugin.PUBLISH_LOCAL_LIFECYCLE_TASK_NAME)
         Task checkTask = tasks.getByName(LifecycleBasePlugin.CHECK_TASK_NAME)
         Task assembleTask = tasks.getByName(LifecycleBasePlugin.ASSEMBLE_TASK_NAME)
+        Task publishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
 
         releaseCheckTask.dependsOn checkTask
         releaseTask.dependsOn assembleTask
@@ -124,6 +166,11 @@ class PluginsPlugin implements Plugin<Project> {
 
         publishToLocalMavenTask.mustRunAfter postReleaseTask
         publishPluginsTask.mustRunAfter postReleaseTask
+
+        postReleaseTask.dependsOn publishTask
+        publishTask.mustRunAfter releaseTask
+
+        Configuration archives = project.configurations.maybeCreate('archives')
     }
 
     private static configureCoverallsTask(final Project project) {
