@@ -35,6 +35,7 @@ import org.gradle.api.reporting.ReportingExtension
 import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
@@ -66,6 +67,7 @@ class PluginsPlugin implements Plugin<Project> {
     static final String INTEGRATION_TEST_TASK_NAME = "integrationTest"
     private static final String INTEGRATION_TEST_SOURCE = "src/integrationTest/groovy"
     static final String DOC_EXPORT_DIR = "docs/api"
+    static final String PUBLISH_GROOVY_DOCS_TASK_NAME = "publishGroovydocs"
 
 
     @Override
@@ -129,12 +131,17 @@ class PluginsPlugin implements Plugin<Project> {
     private static def configureGradleDocsTask(final Project project) {
         TaskContainer tasks = project.tasks
         Groovydoc groovyDocTask = tasks.getByName(GroovyPlugin.GROOVYDOC_TASK_NAME) as Groovydoc
-        groovyDocTask.destinationDir = project.file(DOC_EXPORT_DIR)
         groovyDocTask.use = true
         groovyDocTask.footer = "Atlas API docs"
 
-        Delete cleanTask = tasks.getByName('clean') as Delete
-        cleanTask.delete(groovyDocTask.destinationDir)
+        Sync publishGroovydocTask = tasks.create(PUBLISH_GROOVY_DOCS_TASK_NAME, Sync)
+        publishGroovydocTask.description = "Publish groovy docs to output directory ${DOC_EXPORT_DIR}"
+        publishGroovydocTask.group = PublishingPlugin.PUBLISH_TASK_GROUP
+        publishGroovydocTask.from(groovyDocTask.outputs.files)
+        publishGroovydocTask.destinationDir = project.file(DOC_EXPORT_DIR)
+
+        def publishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
+        publishTask.dependsOn(publishGroovydocTask)
     }
 
     private static configureTaskRuntimeDependencies(final Project project) {

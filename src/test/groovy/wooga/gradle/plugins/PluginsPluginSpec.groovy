@@ -25,6 +25,7 @@ import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.testing.Test
 import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
@@ -80,8 +81,9 @@ class PluginsPluginSpec extends ProjectSpec {
         taskType.isInstance(task)
 
         where:
-        taskName                                 | taskType
-        PluginsPlugin.INTEGRATION_TEST_TASK_NAME | Test
+        taskName                                    | taskType
+        PluginsPlugin.INTEGRATION_TEST_TASK_NAME    | Test
+        PluginsPlugin.PUBLISH_GROOVY_DOCS_TASK_NAME | Sync
     }
 
     def "configures integration test task"() {

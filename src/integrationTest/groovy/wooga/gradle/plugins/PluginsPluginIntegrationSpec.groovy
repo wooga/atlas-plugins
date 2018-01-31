@@ -232,33 +232,28 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
             """.stripIndent()
     }
 
-    def "task groovydoc should export to docs/api"() {
+    @Unroll
+    def "task :#taskToRun publish groovydocs"() {
         given: "a future output directory"
+        fork = true
         def docsExportDir = new File(projectDir, PluginsPlugin.DOC_EXPORT_DIR)
         def classDoc = new File(docsExportDir, "net/wooga/plugins/test/HelloWorld.html")
 
         assert !docsExportDir.exists()
 
         and: "a temp java file"
-        fork = true
         writeHelloWorldGroovy("net.wooga.plugins.test")
 
         when:
-        runTasksSuccessfully('groovydoc')
+        runTasksSuccessfully(taskToRun)
 
         then:
         docsExportDir.exists()
         classDoc.exists()
-    }
 
-    def "clean deletes docs/api"() {
-        def docsExportDir = new File(projectDir, PluginsPlugin.DOC_EXPORT_DIR)
-        docsExportDir.mkdirs()
-
-        when:
-        runTasksSuccessfully('clean')
-
-        then:
-        !docsExportDir.exists()
+        where:
+        taskToRun           | _
+        "publishGroovydocs" | _
+        "publish"           | _
     }
 }
