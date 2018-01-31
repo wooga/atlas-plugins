@@ -46,6 +46,9 @@ import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.gradle.testing.jacoco.tasks.JacocoReportsContainer
 import org.kt3k.gradle.plugin.CoverallsPlugin
+import wooga.gradle.github.GithubPlugin
+import wooga.gradle.github.publish.GithubPublish
+import wooga.gradle.github.publish.GithubPublishPlugin
 
 /**
  * This plugin is a convenient gradle plugin which which acts as a base for all atlas gradle plugins
@@ -80,6 +83,7 @@ class PluginsPlugin implements Plugin<Project> {
             apply(ReleasePlugin)
             apply(JacocoPlugin)
             apply(CoverallsPlugin)
+            apply(GithubPlugin)
             apply(MavenPublishPlugin)
         }
 
@@ -173,6 +177,14 @@ class PluginsPlugin implements Plugin<Project> {
         publishTask.mustRunAfter releaseTask
 
         Configuration archives = project.configurations.maybeCreate('archives')
+
+        GithubPublish githubPublishTask = (GithubPublish) tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
+        githubPublishTask.onlyIf(new ProjectStatusTaskSpec('candidate', 'release'))
+        githubPublishTask.from(archives)
+        githubPublishTask.dependsOn archives
+        githubPublishTask.tagName = "v${project.version}"
+        githubPublishTask.setReleaseName(project.version.toString())
+        githubPublishTask.setPrerelease({ project.status != 'release' })
     }
 
     private static configureCoverallsTask(final Project project) {

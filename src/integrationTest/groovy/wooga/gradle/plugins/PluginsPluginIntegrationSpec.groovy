@@ -257,4 +257,8 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         "publishGroovydocs" | _
         "publish"           | _
     }
+
+    def "task :#taskToRun will publish a release to github"() {
+
+    }
 }

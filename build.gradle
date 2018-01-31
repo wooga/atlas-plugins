@@ -35,3 +35,7 @@ pluginBundle {
         }
     }
 }
+
+dependencies {
+    compile 'gradle.plugin.net.wooga.gradle:atlas-github:0.6.0'
+}
