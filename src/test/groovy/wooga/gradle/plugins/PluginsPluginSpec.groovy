@@ -32,6 +32,8 @@ import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.kt3k.gradle.plugin.CoverallsPlugin
 import spock.lang.Unroll
+import wooga.gradle.github.GithubPlugin
+import wooga.gradle.github.publish.GithubPublish
 
 class PluginsPluginSpec extends ProjectSpec {
     public static final String PLUGIN_NAME = 'net.wooga.plugins'
@@ -57,14 +59,15 @@ class PluginsPluginSpec extends ProjectSpec {
         project.plugins.hasPlugin(pluginType)
 
         where:
-        pluginName       | pluginType
-        "groovy"         | GroovyPlugin
-        "idea"           | IdeaPlugin
-        "maven-publish"  | MavenPublishPlugin
-        "plugin-publish" | PublishPlugin
-        "nebula.release" | ReleasePlugin
-        "jacoco"         | JacocoPlugin
-        "coveralls"      | CoverallsPlugin
+        pluginName         | pluginType
+        "groovy"           | GroovyPlugin
+        "idea"             | IdeaPlugin
+        "maven-publish"    | MavenPublishPlugin
+        "plugin-publish"   | PublishPlugin
+        "nebula.release"   | ReleasePlugin
+        "jacoco"           | JacocoPlugin
+        "coveralls"        | CoverallsPlugin
+        "net.wooga.github" | GithubPlugin
     }
 
     @Unroll("creates the task #taskName")

@@ -46,6 +46,9 @@ import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.gradle.testing.jacoco.tasks.JacocoReportsContainer
 import org.kt3k.gradle.plugin.CoverallsPlugin
+import wooga.gradle.github.GithubPlugin
+import wooga.gradle.github.publish.GithubPublish
+import wooga.gradle.github.publish.GithubPublishPlugin
 
 /**
  * This plugin is a convenient gradle plugin which which acts as a base for all atlas gradle plugins
@@ -80,6 +83,7 @@ class PluginsPlugin implements Plugin<Project> {
             apply(ReleasePlugin)
             apply(JacocoPlugin)
             apply(CoverallsPlugin)
+            apply(GithubPlugin)
             apply(MavenPublishPlugin)
         }
 
@@ -152,6 +156,7 @@ class PluginsPlugin implements Plugin<Project> {
         Task postReleaseTask = rootTasks.getByName(ReleasePlugin.POST_RELEASE_TASK_NAME)
         Task snapshotTask = rootTasks.getByName(ReleasePlugin.SNAPSHOT_TASK_NAME)
         Task finalTask = rootTasks.getByName(ReleasePlugin.FINAL_TASK_NAME)
+        Task candidateTask = rootTasks.getByName(ReleasePlugin.CANDIDATE_TASK_NAME)
         Task releaseTask = rootTasks.getByName("release")
         Task publishPluginsTask = tasks.getByName("publishPlugins")
         Task publishToLocalMavenTask = tasks.getByName(MavenPublishPlugin.PUBLISH_LOCAL_LIFECYCLE_TASK_NAME)
@@ -162,6 +167,7 @@ class PluginsPlugin implements Plugin<Project> {
         releaseCheckTask.dependsOn checkTask
         releaseTask.dependsOn assembleTask
         finalTask.dependsOn publishPluginsTask
+        candidateTask.dependsOn publishPluginsTask
         snapshotTask.dependsOn publishToLocalMavenTask
 
         publishToLocalMavenTask.mustRunAfter postReleaseTask
@@ -171,6 +177,14 @@ class PluginsPlugin implements Plugin<Project> {
         publishTask.mustRunAfter releaseTask
 
         Configuration archives = project.configurations.maybeCreate('archives')
+
+        GithubPublish githubPublishTask = (GithubPublish) tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
+        githubPublishTask.onlyIf(new ProjectStatusTaskSpec('candidate', 'release'))
+        githubPublishTask.from(archives)
+        githubPublishTask.dependsOn archives
+        githubPublishTask.tagName = "v${project.version}"
+        githubPublishTask.setReleaseName(project.version.toString())
+        githubPublishTask.setPrerelease({ project.status != 'release' })
     }
 
     private static configureCoverallsTask(final Project project) {

@@ -92,6 +92,7 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         "check"               | "releaseCheck"
         "assemble"            | "release"
         "publishPlugins"      | "final"
+        "publishPlugins"      | "candidate"
         "publishToMavenLocal" | "snapshot"
     }
 
@@ -255,5 +256,9 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         taskToRun           | _
         "publishGroovydocs" | _
         "publish"           | _
+    }
+
+    def "task :#taskToRun will publish a release to github"() {
+
     }
 }
