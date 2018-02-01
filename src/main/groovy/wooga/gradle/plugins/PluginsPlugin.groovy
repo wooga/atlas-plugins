@@ -113,12 +113,7 @@ class PluginsPlugin implements Plugin<Project> {
             testCompile 'com.netflix.nebula:nebula-test:latest.release'
             testCompile 'com.github.stefanbirkner:system-rules:1.16.0'
 
-            compile 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.2'
-            compile 'com.gradle.publish:plugin-publish-plugin:0.9.9'
-            compile 'com.netflix.nebula:nebula-release-plugin:5.0.0'
             compile 'commons-io:commons-io:2.5'
-            compile 'gradle.plugin.net.wooga.gradle:atlas-github:0.6.1'
-
             compile gradleApi()
             compile localGroovy()
         }
