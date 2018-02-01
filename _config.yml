@@ -1,0 +1,4 @@
+theme: jekyll-theme-midnight
+title: Atlas Plugins
+description: a Base gradle plugin for atlas gradle plugin development
+show_downloads: false

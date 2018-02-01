@@ -1,5 +1,5 @@
 atlas-plugins
-===========
+=============
 
 ![Wooga Internal](https://img.shields.io/badge/wooga-internal-lightgray.svg?style=flat-square)
 [![Gradle Plugin ID](https://img.shields.io/badge/gradle-net.wooga.github-brightgreen.svg?style=flat-square)](https://plugins.gradle.org/plugin/net.wooga.plugins)
@@ -10,6 +10,43 @@ atlas-plugins
 [![GitHub release](https://img.shields.io/github/release/wooga/atlas-plugins.svg?style=flat-square)]()
 
 Plugin to establish conventions for a atlas gradle plugins. This plugin is used to help setup our other plugins.
+
+Usage
+=====
+
+**build.gradle**
+
+```groovy
+plugins {
+  id "net.wooga.unity" version "0.2.0"
+}
+```
+
+It applies the following plugins:
+
+* 'groovy'
+* 'idea'
+* 'publish'
+* 'plugin-publish'
+* 'nebular.release'
+* 'jacoco'
+* 'com.github.kt3k.coveralls'
+* 'net.wooga.github'
+* 'maven-publish'
+
+### Testing/Development
+
+The resulting project structure is prepared as a normal groovy gradle plugin. Additional to the normal `test` task the plugin also adds a `integrationTest` task with code coverage and reporting. As test framework `Spock` will be added to the classpath. The jocoo plugin is used for code coverage. The integration test results are merged with the unit test results. All our plugins push the coverage report to coveralls. The coveralls plugin is connected to jacoco and only needs the `COVERALLS_TOKEN` in the environment. The plugin will also generate an idea project with the integration tests configured as seperate module.
+
+### Publish/Release
+
+The project uses [Nebular Release](https://github.com/nebula-plugins/nebula-release-plugin) for the release and publish cycle. The tasks `final` and `candidate` will publish the plugin to the gradle plugins repository with the help of the `plugin-publish` plugin and create a formal gitub release with the `net.wooga.github` plugin. The `snapshot` task will only publish to the local maven repository.
+
+
+Documentation
+=============
+
+- [API docs](https://wooga.github.io/atlas-plugins/docs/api/)
 
 LICENSE
 =======
