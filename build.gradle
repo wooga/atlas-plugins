@@ -16,7 +16,7 @@
  */
 
 plugins {
-    id 'net.wooga.plugins' version '0.1.1'
+    id 'net.wooga.plugins' version '0.2.0-rc.1'
 }
 
 group 'net.wooga.gradle'
@@ -24,7 +24,7 @@ description = 'Plugin for wooga gradle plugin development.'
 
 pluginBundle {
     website = 'https://plugins.com/wooga/atlas-plugins'
-    vcsUrl = 'https://plugins.com/wooga/atlas-plugins'
+    vcsUrl = 'https://github.com/wooga/atlas-plugins'
     tags = ['plugins', 'publishing', 'internal']
 
     plugins {
@@ -36,6 +36,6 @@ pluginBundle {
     }
 }
 
-dependencies {
-    compile 'gradle.plugin.net.wooga.gradle:atlas-github:0.6.1'
+github {
+    repositoryName = "wooga/atlas-plugins"
 }
