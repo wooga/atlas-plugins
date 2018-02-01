@@ -117,7 +117,7 @@ class PluginsPlugin implements Plugin<Project> {
             compile 'com.gradle.publish:plugin-publish-plugin:0.9.9'
             compile 'com.netflix.nebula:nebula-release-plugin:5.0.0'
             compile 'commons-io:commons-io:2.5'
-            compile 'gradle.plugin.net.wooga.gradle:atlas-github:0.6.0'
+            compile 'gradle.plugin.net.wooga.gradle:atlas-github:0.6.1'
 
             compile gradleApi()
             compile localGroovy()
@@ -176,12 +176,8 @@ class PluginsPlugin implements Plugin<Project> {
         postReleaseTask.dependsOn publishTask
         publishTask.mustRunAfter releaseTask
 
-        Configuration archives = project.configurations.maybeCreate('archives')
-
         GithubPublish githubPublishTask = (GithubPublish) tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
         githubPublishTask.onlyIf(new ProjectStatusTaskSpec('candidate', 'release'))
-        githubPublishTask.from(archives)
-        githubPublishTask.dependsOn archives
         githubPublishTask.tagName = "v${project.version}"
         githubPublishTask.setReleaseName(project.version.toString())
         githubPublishTask.setPrerelease({ project.status != 'release' })
