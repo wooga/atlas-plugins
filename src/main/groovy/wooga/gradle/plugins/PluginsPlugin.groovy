@@ -17,6 +17,7 @@
 
 package wooga.gradle.plugins
 
+import com.gradle.publish.PluginBundleExtension
 import com.gradle.publish.PublishPlugin
 import nebula.plugin.release.ReleasePlugin
 import org.apache.commons.lang.StringUtils
@@ -49,6 +50,8 @@ import org.kt3k.gradle.plugin.CoverallsPlugin
 import wooga.gradle.github.GithubPlugin
 import wooga.gradle.github.publish.GithubPublish
 import wooga.gradle.github.publish.GithubPublishPlugin
+
+import java.util.concurrent.Callable
 
 /**
  * This plugin is a convenient gradle plugin which which acts as a base for all atlas gradle plugins
@@ -130,8 +133,29 @@ class PluginsPlugin implements Plugin<Project> {
     private static def configureGradleDocsTask(final Project project) {
         TaskContainer tasks = project.tasks
         Groovydoc groovyDocTask = tasks.getByName(GroovyPlugin.GROOVYDOC_TASK_NAME) as Groovydoc
-        groovyDocTask.use = true
-        groovyDocTask.footer = "Atlas API docs"
+        tasks.withType(Groovydoc, new Action<Groovydoc>() {
+            @Override
+            void execute(Groovydoc task) {
+                if(task.name == GroovyPlugin.GROOVYDOC_TASK_NAME) {
+                    PluginBundleExtension extension = project.getExtensions().getByType(PluginBundleExtension)
+
+                    Callable<String> docTitle = {
+                        if(extension.plugins[0]) {
+                            return "${extension.plugins[0].displayName} API".toString()
+                        }
+                        null
+                    }
+
+                    def conventionMapping = task.getConventionMapping()
+                    conventionMapping.use = {true}
+                    conventionMapping.footer = docTitle
+                    conventionMapping.windowTitle = docTitle
+                    conventionMapping.docTitle = docTitle
+                    conventionMapping.noVersionStamp = {true}
+                    conventionMapping.noTimestamp = {true}
+                }
+            }
+        })
 
         Sync publishGroovydocTask = tasks.create(PUBLISH_GROOVY_DOCS_TASK_NAME, Sync)
         publishGroovydocTask.description = "Publish groovy docs to output directory ${DOC_EXPORT_DIR}"
