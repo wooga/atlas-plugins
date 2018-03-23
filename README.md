@@ -18,7 +18,7 @@ Usage
 
 ```groovy
 plugins {
-  id "net.wooga.unity" version "0.2.0"
+  id "net.wooga.unity" version "1.0.0"
 }
 ```
 
@@ -47,6 +47,12 @@ Documentation
 =============
 
 - [API docs](https://wooga.github.io/atlas-plugins/docs/api/)
+- [Release Notes](RELEASE_NOTES.md)
+
+Development
+===========
+
+[Code of Conduct](docs/Code-of-conduct.md)
 
 LICENSE
 =======

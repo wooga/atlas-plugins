@@ -23,7 +23,7 @@ group 'net.wooga.gradle'
 description = 'Plugin for wooga gradle plugin development.'
 
 pluginBundle {
-    website = 'https://plugins.com/wooga/atlas-plugins'
+    website = 'https://wooga.github.io/atlas-plugins'
     vcsUrl = 'https://github.com/wooga/atlas-plugins'
     tags = ['plugins', 'publishing', 'internal']
 
@@ -41,7 +41,7 @@ github {
 }
 
 dependencies {
-    compile 'gradle.plugin.net.wooga.gradle:atlas-github:0.6.1'
+    compile 'gradle.plugin.net.wooga.gradle:atlas-github:1.+'
     compile 'com.netflix.nebula:nebula-release-plugin:6.+'
     compile 'com.gradle.publish:plugin-publish-plugin:0.9.9'
     compile 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.2'
