@@ -1,4 +1,24 @@
-### 0.1.0 - November 21 2017
+### 1.0.0 - Mar 23 2018
+
+* ![NEW] stable major release
+
+### 0.3.0 - Feb 01 2018
+
+* ![UPDATE] dependecies
+
+### 0.2.1 - Feb 01 2018
+
+* ![FIX] Bugs
+
+### 0.2.0 - Feb 01 2018
+
+* ![ADD] github release plugin and release steps
+
+### 0.1.1 - Jan 31 2018
+
+* ![FIX] switch to back to Java 7
+
+### 0.1.0 - Nov 22 2017
 
 * ![NEW] initial release
 * ![ADD] `net.wooga.plugins` plugin
