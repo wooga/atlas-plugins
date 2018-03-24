@@ -1,3 +1,7 @@
+### 1.1.0 - Mar 24 2018
+
+* ![UPDATE] `net.wooga.github` plugin dependency to `1.+`
+
 ### 1.0.0 - Mar 23 2018
 
 * ![NEW] stable major release
