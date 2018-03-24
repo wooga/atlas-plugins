@@ -33,7 +33,7 @@ import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.kt3k.gradle.plugin.CoverallsPlugin
 import spock.lang.Unroll
 import wooga.gradle.github.GithubPlugin
-import wooga.gradle.github.publish.GithubPublish
+import wooga.gradle.github.publish.tasks.GithubPublish
 
 class PluginsPluginSpec extends ProjectSpec {
     public static final String PLUGIN_NAME = 'net.wooga.plugins'

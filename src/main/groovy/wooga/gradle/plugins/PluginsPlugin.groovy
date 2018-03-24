@@ -46,7 +46,7 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.gradle.testing.jacoco.tasks.JacocoReportsContainer
 import org.kt3k.gradle.plugin.CoverallsPlugin
 import wooga.gradle.github.GithubPlugin
-import wooga.gradle.github.publish.GithubPublish
+import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.github.publish.GithubPublishPlugin
 
 import java.util.concurrent.Callable
