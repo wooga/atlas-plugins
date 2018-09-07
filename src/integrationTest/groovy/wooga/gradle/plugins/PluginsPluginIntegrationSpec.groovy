@@ -17,7 +17,6 @@
 
 package wooga.gradle.plugins
 
-import nebula.test.IntegrationSpec
 import org.ajoberstar.grgit.Grgit
 import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
