@@ -16,7 +16,7 @@
  */
 
 plugins {
-    id 'net.wooga.plugins' version '1.0.0'
+    id 'net.wooga.plugins' version '1.1.0'
 }
 
 group 'net.wooga.gradle'
@@ -42,7 +42,7 @@ github {
 
 dependencies {
     compile 'gradle.plugin.net.wooga.gradle:atlas-github:1.+'
-    compile 'com.netflix.nebula:nebula-release-plugin:6.+'
-    compile 'com.gradle.publish:plugin-publish-plugin:0.9.9'
+    compile 'com.netflix.nebula:nebula-release-plugin:7.+'
+    compile 'com.gradle.publish:plugin-publish-plugin:0.10.0'
     compile 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.2'
 }
