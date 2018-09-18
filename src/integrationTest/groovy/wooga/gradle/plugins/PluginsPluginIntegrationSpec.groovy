@@ -300,4 +300,18 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         "publishGroovydocs" | _
         "publish"           | _
     }
+
+    @Unroll
+    def "task :#taskAlias will execute :#taskToRun"() {
+        when:
+        def result = runTasks(taskAlias, "--dry-run")
+
+        then:
+        result.standardOutput.contains(":${taskToRun}")
+        !result.standardOutput.contains(":${taskAlias}")
+
+        where:
+        taskAlias | taskToRun
+        "rc"      | "candidate"
+    }
 }
