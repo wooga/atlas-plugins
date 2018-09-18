@@ -72,6 +72,7 @@ class PluginsPlugin implements Plugin<Project> {
     private static final String INTEGRATION_TEST_SOURCE = "src/integrationTest/groovy"
     static final String DOC_EXPORT_DIR = "docs/api"
     static final String PUBLISH_GROOVY_DOCS_TASK_NAME = "publishGroovydocs"
+    static final String RC_TASK = "rc"
 
 
     @Override
@@ -87,6 +88,8 @@ class PluginsPlugin implements Plugin<Project> {
             apply(GithubPlugin)
             apply(MavenPublishPlugin)
         }
+
+        applyRCtoCandidateAlias(project)
 
         Task integrationTestTask = setupIntegrationTestTask(project, project.tasks)
         Task testTask = project.tasks.getByName(JavaPlugin.TEST_TASK_NAME)
@@ -300,5 +303,25 @@ class PluginsPlugin implements Plugin<Project> {
         }
 
         javaConvention.getSourceSets().getByName("integrationTest")
+    }
+
+    /**
+     * The {@code NebularRelease} plugin will provide slightly better error messages when using the official
+     * cli tasks (final, candidate, snapshot, ...). Because of internal naming reasons it makes sense for us to use
+     * {@code rc} instead of {@code candidate}. All other resources are named with the
+     * pattern (final, rc and snapshot). I used a custom task with the name {@code rc} which depends on
+     * {@code candidate} but this will fall through the error check in {@code NebularRelease}. So instead we
+     * now change the cli tasklist on the fly. If we find the {@code rc} taskname in the cli tasklist we remove it
+     * and add {@code candidate} instead.
+     * @param project
+     * @return
+     */
+    static void applyRCtoCandidateAlias(Project project) {
+        List<String> cliTasks = project.rootProject.gradle.startParameter.taskNames
+        if (cliTasks.contains(RC_TASK)) {
+            cliTasks.remove(RC_TASK)
+            cliTasks.add(ReleasePlugin.CANDIDATE_TASK_NAME)
+            project.rootProject.gradle.startParameter.setTaskNames(cliTasks)
+        }
     }
 }
