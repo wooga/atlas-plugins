@@ -1,3 +1,7 @@
+### 1.2.0 - Sep 22 2018
+
+* ![FIX] missing `rc` task
+
 ### 1.1.0 - Mar 24 2018
 
 * ![UPDATE] `net.wooga.github` plugin dependency to `1.+`

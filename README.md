@@ -18,7 +18,7 @@ Usage
 
 ```groovy
 plugins {
-  id "net.wooga.unity" version "1.0.0"
+  id "net.wooga.unity" version "1.2.0"
 }
 ```
 

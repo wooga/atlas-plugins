@@ -169,6 +169,11 @@ extends java.lang.Object
                             <td class="colLast"><code><a href="#PUBLISH_GROOVY_DOCS_TASK_NAME">PUBLISH_GROOVY_DOCS_TASK_NAME</a></code><br></td>
                         </tr>
                         
+                        <tr class="rowColor">
+                            <td class="colFirst"><code><strong>static&nbsp;java.lang.String</strong></code>&nbsp;</td>
+                            <td class="colLast"><code><a href="#RC_TASK">RC_TASK</a></code><br></td>
+                        </tr>
+                        
                     </table>
                    </ul>
                 </li>
@@ -199,6 +204,13 @@ extends java.lang.Object
                             <td class="colFirst"><code></code></td>
                             <td class="colLast"><code>void</code></td>
                             <td class="colLast"><code><strong><a href="#apply(org.gradle.api.Project)">apply</a></strong>(org.gradle.api.Project project)</code><br></td>
+                        </tr>
+                        
+                        <tr class="rowColor">
+                            <td class="colFirst"><code></code></td>
+                            <td class="colLast"><code>static&nbsp;void</code></td>
+                            <td class="colLast"><code><strong><a href="#applyRCtoCandidateAlias(org.gradle.api.Project)">applyRCtoCandidateAlias</a></strong>(org.gradle.api.Project project)</code><br>The <CODE>NebularRelease</CODE> plugin will provide slightly better error messages when using the official
+ cli tasks (final, candidate, snapshot, ...). </td>
                         </tr>
                         
                     </table>
@@ -268,6 +280,14 @@ extends java.lang.Object
                             </li>
                         </ul>
                     
+                        <a name="RC_TASK"><!-- --></a>
+                        <ul class="blockListLast">
+                            <li class="blockList">
+                                <h4>static&nbsp;final&nbsp;java.lang.String <strong>RC_TASK</strong></h4>
+                                <p></p>
+                            </li>
+                        </ul>
+                    
                 </li>
             </ul>
             
@@ -291,6 +311,20 @@ extends java.lang.Object
                                 <h4>@java.lang.Override
 void <strong>apply</strong>(org.gradle.api.Project project)</h4>
                                 <p></p>
+                            </li>
+                        </ul>
+                    
+                        <a name="applyRCtoCandidateAlias(org.gradle.api.Project)"><!-- --></a>
+                        <ul class="blockListLast">
+                            <li class="blockList">
+                                <h4>static&nbsp;void <strong>applyRCtoCandidateAlias</strong>(org.gradle.api.Project project)</h4>
+                                <p> The <CODE>NebularRelease</CODE> plugin will provide slightly better error messages when using the official
+ cli tasks (final, candidate, snapshot, ...). Because of internal naming reasons it makes sense for us to use
+ <CODE>rc</CODE> instead of <CODE>candidate</CODE>. All other resources are named with the
+ pattern (final, rc and snapshot). I used a custom task with the name <CODE>rc</CODE> which depends on
+ <CODE>candidate</CODE> but this will fall through the error check in <CODE>NebularRelease</CODE>. So instead we
+ now change the cli tasklist on the fly. If we find the <CODE>rc</CODE> taskname in the cli tasklist we remove it
+ and add <CODE>candidate</CODE> instead. <DL><DT><B>Parameters:</B></DT><DD>project</DD></DL><DL><DT><B>Returns:</B></DT><DD></DD></DL></p>
                             </li>
                         </ul>
                     
