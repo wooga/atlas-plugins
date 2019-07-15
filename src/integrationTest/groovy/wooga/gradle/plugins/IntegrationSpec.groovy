@@ -17,7 +17,13 @@
 
 package wooga.gradle.plugins
 
+import org.junit.Rule
+import org.junit.contrib.java.lang.system.ProvideSystemProperty
+
 class IntegrationSpec extends nebula.test.IntegrationSpec {
+
+    @Rule
+    ProvideSystemProperty properties = new ProvideSystemProperty("ignoreDeprecations", "true")
 
     def setup() {
         def gradleVersion = System.getenv("GRADLE_VERSION")
