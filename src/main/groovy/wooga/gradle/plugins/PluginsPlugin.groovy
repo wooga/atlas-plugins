@@ -114,7 +114,7 @@ class PluginsPlugin implements Plugin<Project> {
                 exclude module: 'groovy-all'
             }
 
-            testCompile 'com.netflix.nebula:nebula-test:latest.release'
+            testCompile 'com.netflix.nebula:nebula-test:7.7.0'
             testCompile 'com.github.stefanbirkner:system-rules:1.16.0'
 
             compile 'commons-io:commons-io:2.5'
