@@ -1,18 +1,17 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2018-2021 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package wooga.gradle.plugins
@@ -20,11 +19,11 @@ package wooga.gradle.plugins
 import com.gradle.publish.PluginBundleExtension
 import com.gradle.publish.PublishPlugin
 import nebula.plugin.release.ReleasePlugin
-import org.apache.commons.lang.StringUtils
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.JavaPluginConvention
@@ -46,8 +45,8 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.gradle.testing.jacoco.tasks.JacocoReportsContainer
 import org.kt3k.gradle.plugin.CoverallsPlugin
 import wooga.gradle.github.GithubPlugin
-import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.github.publish.GithubPublishPlugin
+import wooga.gradle.github.publish.tasks.GithubPublish
 
 import java.util.concurrent.Callable
 
@@ -81,13 +80,14 @@ class PluginsPlugin implements Plugin<Project> {
         project.pluginManager.with {
             apply(GroovyPlugin)
             apply(IdeaPlugin)
-            apply(PublishPlugin)
-            apply(ReleasePlugin)
             apply(JacocoPlugin)
-            apply(CoverallsPlugin)
-            apply(GithubPlugin)
             apply(MavenPublishPlugin)
         }
+
+        project.pluginManager.apply(PublishPlugin)
+        project.pluginManager.apply(ReleasePlugin)
+        project.pluginManager.apply(CoverallsPlugin)
+        project.pluginManager.apply(GithubPlugin)
 
         applyRCtoCandidateAlias(project)
 
@@ -100,27 +100,8 @@ class PluginsPlugin implements Plugin<Project> {
         configureTaskRuntimeDependencies(project)
         configureGradleDocsTask(project)
 
-        project.repositories {
-            jcenter()
-            mavenCentral()
-            maven {
-                url "https://plugins.gradle.org/m2/"
-            }
-        }
-
-        project.dependencies {
-            testCompile('junit:junit:4.11')
-            testCompile('org.spockframework:spock-core:1.0-groovy-2.4') {
-                exclude module: 'groovy-all'
-            }
-
-            testCompile 'com.netflix.nebula:nebula-test:7.7.0'
-            testCompile 'com.github.stefanbirkner:system-rules:1.16.0'
-
-            compile 'commons-io:commons-io:2.5'
-            compile gradleApi()
-            compile localGroovy()
-        }
+        setupRepositories(project)
+        setupDependencies(project)
 
         project.publishing {
             publications {
@@ -131,29 +112,47 @@ class PluginsPlugin implements Plugin<Project> {
         }
     }
 
+    private static void setupRepositories(Project project) {
+        def repositories = project.repositories
+        repositories.add(repositories.mavenCentral())
+        repositories.add(repositories.gradlePluginPortal())
+    }
+
+    private static void setupDependencies(Project project) {
+        DependencyHandler dependencies = project.getDependencies();
+        dependencies.add("api", dependencies.gradleApi())
+        dependencies.add("testImplementation", 'junit:junit:[4,5)')
+        dependencies.add("testImplementation", 'org.spockframework:spock-core:1.3-groovy-2.5', {
+            exclude module: 'groovy-all'
+        })
+        dependencies.add("testImplementation", 'com.netflix.nebula:nebula-test:[8,9)')
+        dependencies.add("testImplementation", 'com.github.stefanbirkner:system-rules:[1,2)')
+        dependencies.add("implementation", 'commons-io:commons-io:[2,3)')
+    }
+
     private static def configureGradleDocsTask(final Project project) {
         TaskContainer tasks = project.tasks
         Groovydoc groovyDocTask = tasks.getByName(GroovyPlugin.GROOVYDOC_TASK_NAME) as Groovydoc
         tasks.withType(Groovydoc, new Action<Groovydoc>() {
             @Override
             void execute(Groovydoc task) {
-                if(task.name == GroovyPlugin.GROOVYDOC_TASK_NAME) {
+                if (task.name == GroovyPlugin.GROOVYDOC_TASK_NAME) {
                     PluginBundleExtension extension = project.getExtensions().getByType(PluginBundleExtension)
 
                     Callable<String> docTitle = {
-                        if(extension.plugins[0]) {
+                        if (extension.plugins[0]) {
                             return "${extension.plugins[0].displayName} API".toString()
                         }
                         null
                     }
 
                     def conventionMapping = task.getConventionMapping()
-                    conventionMapping.use = {true}
+                    conventionMapping.use = { true }
                     conventionMapping.footer = docTitle
                     conventionMapping.windowTitle = docTitle
                     conventionMapping.docTitle = docTitle
-                    conventionMapping.noVersionStamp = {true}
-                    conventionMapping.noTimestamp = {true}
+                    conventionMapping.noVersionStamp = { true }
+                    conventionMapping.noTimestamp = { true }
                 }
             }
         })
@@ -217,7 +216,7 @@ class PluginsPlugin implements Plugin<Project> {
         project.tasks.withType(JacocoReport, new Action<JacocoReport>() {
             @Override
             void execute(JacocoReport jacocoReport) {
-                if (jacocoReport.name == "jacoco" + StringUtils.capitalize(JavaPlugin.TEST_TASK_NAME) + "Report") {
+                if (jacocoReport.name == "jacoco" + JavaPlugin.TEST_TASK_NAME.capitalize() + "Report") {
                     jacocoReport.reports(new Action<JacocoReportsContainer>() {
                         @Override
                         void execute(JacocoReportsContainer configurableReports) {
@@ -247,9 +246,8 @@ class PluginsPlugin implements Plugin<Project> {
         JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
 
         def integrationTestSourceSet = setupIntegrationTestSourceSet(project, javaConvention)
-        setupIntegrationTestConfiguration(project)
+        setupIntegrationTestConfiguration(project, javaConvention)
         setupIntegrationTestIdeaModule(project)
-
 
         Test integrationTestTask = tasks.create(name: INTEGRATION_TEST_TASK_NAME, type: Test) as Test
 
@@ -274,48 +272,46 @@ class PluginsPlugin implements Plugin<Project> {
         ideaModel.module.scopes["TEST"]["plus"] += [project.configurations.getByName("integrationTestCompile")]
     }
 
-    private static void setupIntegrationTestConfiguration(Project project) {
+    private static void setupIntegrationTestConfiguration(Project project, final JavaPluginConvention javaConvention) {
+        def test = javaConvention.sourceSets.getByName("test")
+        def integrationTest = javaConvention.sourceSets.getByName("integrationTest")
+
+        test.implementationConfigurationName
         def configurations = project.configurations
-        def testCompile = configurations.getByName("testCompile")
-        def testRuntime = configurations.getByName("testRuntime")
+        def testImplementation = configurations.getByName(test.implementationConfigurationName)
+        def testRuntimeOnly = configurations.getByName(test.runtimeOnlyConfigurationName)
 
-        def integrationTestCompile = configurations.getByName("integrationTestCompile")
-        integrationTestCompile.extendsFrom(testCompile)
+        def integrationTestImplementation = configurations.getByName(integrationTest.implementationConfigurationName)
+        integrationTestImplementation.extendsFrom(testImplementation)
 
-        def integrationTestRuntime = configurations.getByName("integrationTestRuntime")
-        integrationTestRuntime.extendsFrom(testRuntime)
+        def integrationTestRuntimeOnly = configurations.getByName(integrationTest.runtimeOnlyConfigurationName)
+        integrationTestRuntimeOnly.extendsFrom(testRuntimeOnly)
     }
 
-    private static SourceSet setupIntegrationTestSourceSet(
-            final Project project, final JavaPluginConvention javaConvention) {
+    private static SourceSet setupIntegrationTestSourceSet(final Project project, final JavaPluginConvention javaConvention) {
         def main = javaConvention.sourceSets.getByName("main")
         def test = javaConvention.sourceSets.getByName("test")
 
-        javaConvention.sourceSets {
-            integrationTest {
-                groovy {
-                    compileClasspath += main.output + test.output
-                    runtimeClasspath += main.output + test.output
-                    srcDir project.file(INTEGRATION_TEST_SOURCE)
-                }
-                resources.srcDir 'src/integrationTest/resources'
-            }
-        }
+        SourceSet sourceSet = javaConvention.sourceSets.maybeCreate("integrationTest")
+        sourceSet.setCompileClasspath(project.files(main.compileClasspath, test.compileClasspath, sourceSet.compileClasspath))
+        sourceSet.setRuntimeClasspath(project.files(main.compileClasspath, test.compileClasspath, sourceSet.runtimeClasspath))
 
-        javaConvention.getSourceSets().getByName("integrationTest")
+        sourceSet.groovy.srcDir("src/" + sourceSet.getName() + "/groovy");
+        sourceSet.resources.srcDir("src/" + sourceSet.getName() + "/resources");
+        sourceSet
     }
 
-    /**
-     * The {@code NebularRelease} plugin will provide slightly better error messages when using the official
-     * cli tasks (final, candidate, snapshot, ...). Because of internal naming reasons it makes sense for us to use
-     * {@code rc} instead of {@code candidate}. All other resources are named with the
-     * pattern (final, rc and snapshot). I used a custom task with the name {@code rc} which depends on
-     * {@code candidate} but this will fall through the error check in {@code NebularRelease}. So instead we
-     * now change the cli tasklist on the fly. If we find the {@code rc} taskname in the cli tasklist we remove it
-     * and add {@code candidate} instead.
-     * @param project
-     * @return
-     */
+/**
+ * The {@code NebularRelease} plugin will provide slightly better error messages when using the official
+ * cli tasks (final, candidate, snapshot, ...). Because of internal naming reasons it makes sense for us to use
+ * {@code rc} instead of {@code candidate}. All other resources are named with the
+ * pattern (final, rc and snapshot). I used a custom task with the name {@code rc} which depends on
+ * {@code candidate} but this will fall through the error check in {@code NebularRelease}. So instead we
+ * now change the cli tasklist on the fly. If we find the {@code rc} taskname in the cli tasklist we remove it
+ * and add {@code candidate} instead.
+ * @param project
+ * @return
+ */
     static void applyRCtoCandidateAlias(Project project) {
         List<String> cliTasks = project.rootProject.gradle.startParameter.taskNames
         if (cliTasks.contains(RC_TASK)) {
@@ -324,4 +320,5 @@ class PluginsPlugin implements Plugin<Project> {
             project.rootProject.gradle.startParameter.setTaskNames(cliTasks)
         }
     }
+
 }
