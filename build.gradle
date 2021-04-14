@@ -15,8 +15,7 @@
  */
 
 plugins {
-    id 'net.wooga.plugins' version '1.3.0'
-    id 'com.gradle.plugin-publish' version '0.14.0'
+    id 'net.wooga.plugins' version '2.0.0'
 }
 
 group 'net.wooga.gradle'
@@ -44,23 +43,6 @@ compileJava   {
     sourceCompatibility = '1.8'
     targetCompatibility = '1.8'
 }
-
-/*
-This method can be removed after the release of the next major version
- */
-private static void setupIntegrationTestConfiguration(Project project) {
-    def configurations = project.configurations
-    def testImplementation = configurations.getByName("testImplementation")
-    def testRuntimeOnly = configurations.getByName("testRuntimeOnly")
-
-    def integrationTestImplementation = configurations.getByName("integrationTestImplementation")
-    integrationTestImplementation.extendsFrom(testImplementation)
-
-    def integrationTestRuntimeOnly = configurations.getByName("integrationTestRuntimeOnly")
-    integrationTestRuntimeOnly.extendsFrom(testRuntimeOnly)
-}
-
-setupIntegrationTestConfiguration(this.project)
 
 dependencies {
     implementation 'gradle.plugin.net.wooga.gradle:atlas-github:[1,2)'
