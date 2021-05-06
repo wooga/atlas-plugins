@@ -1,5 +1,6 @@
 package wooga.gradle.plugins.releasenotes
 
+import com.wooga.github.changelog.changeSet.ChangeSet
 import com.wooga.github.changelog.changeSet.Compound
 import com.wooga.github.changelog.changeSet.Logs
 import com.wooga.github.changelog.changeSet.PullRequests
