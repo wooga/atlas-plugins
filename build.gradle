@@ -45,20 +45,25 @@ compileJava   {
 }
 
 dependencies {
-    implementation 'gradle.plugin.net.wooga.gradle:atlas-github:[1,2)'
+    implementation 'gradle.plugin.net.wooga.gradle:atlas-github:2.+'
     implementation 'com.netflix.nebula:nebula-release-plugin:[15,16)'
     implementation 'com.gradle.publish:plugin-publish-plugin:0.14.0'
     implementation 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:[2,3)'
+    implementation 'gradle.plugin.net.wooga.gradle:atlas-GithubReleaseNotes:0.1.0'
+    implementation 'org.ajoberstar.grgit:grgit-gradle:4.1.0'
 
     testImplementation('com.netflix.nebula:nebula-test:[8,9)') {
         version {
             strictly '8.1.0'
         }
     }
-
     testImplementation('junit:junit:[4,5)')
-    testImplementation('org.spockframework:spock-core:1.3-groovy-2.5') {
-        exclude module: 'groovy-all'
-    }
+
     testImplementation 'org.ajoberstar.grgit:grgit-core:[4,5)'
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'org.codehaus.groovy:groovy-all:2.5.12'
+    }
 }

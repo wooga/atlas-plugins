@@ -19,6 +19,9 @@ package wooga.gradle.plugins
 import com.gradle.publish.PluginBundleExtension
 import com.gradle.publish.PublishPlugin
 import nebula.plugin.release.ReleasePlugin
+import nebula.plugin.release.git.base.ReleasePluginExtension
+import nebula.plugin.release.git.base.ReleaseVersion
+import org.ajoberstar.grgit.gradle.GrgitPlugin
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -47,6 +50,11 @@ import org.kt3k.gradle.plugin.CoverallsPlugin
 import wooga.gradle.github.GithubPlugin
 import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
+import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
+import wooga.gradle.githubReleaseNotes.tasks.GenerateReleaseNotes
+import wooga.gradle.plugins.releasenotes.ReleaseNotesStrategy
+
+//import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
 
 import java.util.concurrent.Callable
 
@@ -82,12 +90,13 @@ class PluginsPlugin implements Plugin<Project> {
             apply(IdeaPlugin)
             apply(JacocoPlugin)
             apply(MavenPublishPlugin)
+            apply(PublishPlugin)
+            apply(ReleasePlugin)
+            apply(CoverallsPlugin)
+            apply(GithubPlugin)
+            apply(GrgitPlugin)
+            apply(GithubReleaseNotesPlugin)
         }
-
-        project.pluginManager.apply(PublishPlugin)
-        project.pluginManager.apply(ReleasePlugin)
-        project.pluginManager.apply(CoverallsPlugin)
-        project.pluginManager.apply(GithubPlugin)
 
         applyRCtoCandidateAlias(project)
 
@@ -99,6 +108,7 @@ class PluginsPlugin implements Plugin<Project> {
         configureCoverallsTask(project)
         configureTaskRuntimeDependencies(project)
         configureGradleDocsTask(project)
+        configureReleaseNotes(project)
 
         setupRepositories(project)
         setupDependencies(project)
@@ -111,6 +121,35 @@ class PluginsPlugin implements Plugin<Project> {
             }
         }
     }
+
+    private static void configureReleaseNotes(Project project) {
+        def releaseNotesProvider = project.tasks.register("releaseNotes", GenerateReleaseNotes)
+        releaseNotesProvider.configure { task ->
+
+            task.from.set(project.provider {
+                def version = project.version.inferedVersion as ReleaseVersion
+                if (version.previousVersion) {
+                    return "v${version.previousVersion}".toString()
+                }
+                return null
+            } )
+            task.branch.set(project.extensions.grgit.branch.current.name as String)
+            task.output.set(new File("${project.buildDir}/outputs/release-notes.md"))
+            task.strategy.set(new ReleaseNotesStrategy())
+        }
+    }
+//        generateReleaseNotes {
+//            branch = project.grgit.branch.current.name
+//            output.set(file)
+//            from.set(versionBuilder.version.map({ version ->
+//                if (version.previousVersion) {
+//                    return "v${version.previousVersion}".toString()
+//                }
+//                null
+//            }))
+//
+//            strategy.set(new net.wooga.strive.StriveReleaseNotesStrategy())
+//        }
 
     private static void setupRepositories(Project project) {
         def repositories = project.repositories
