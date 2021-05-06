@@ -17,12 +17,10 @@
 package wooga.gradle.plugins
 
 import com.gradle.publish.PublishPlugin
-import com.gradle.publish.PublishTask
 import nebula.plugin.release.ReleasePlugin
 import nebula.test.ProjectSpec
 import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.gradle.GrgitPlugin
-import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPluginConvention
@@ -114,8 +112,8 @@ class PluginsPluginSpec extends ProjectSpec {
         project.plugins.apply(PLUGIN_NAME)
 
         then:
-        Task task = project.tasks.findByName(taskName)
-        task.getTaskDependencies().getDependencies(task).findAll {t ->
+        def task = project.tasks.findByName(taskName)
+        task.getDependsOn().findAll {Task t ->
             dependencies.find {
                 depName -> t.name == depName
             }
@@ -124,6 +122,7 @@ class PluginsPluginSpec extends ProjectSpec {
         where:
         taskName                                | dependencies
         GithubPublishPlugin.PUBLISH_TASK_NAME   | [PluginsPlugin.RELEASE_NOTES_TASK_NAME]
+        ReleasePlugin.POST_RELEASE_TASK_NAME    | [GithubPublishPlugin.PUBLISH_TASK_NAME]
     }
 
     def "configures integration test task"() {
