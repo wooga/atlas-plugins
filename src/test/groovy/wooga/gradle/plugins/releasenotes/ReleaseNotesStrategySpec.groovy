@@ -123,18 +123,18 @@ class ReleaseNotesStrategySpec extends Specification {
         List<GHCommit> logs = generateMockLog(commitMessages.size())
 
         and: "some custom pull requests with change lists"
-        GHPullRequest pr1 = mockPr("Add custom test feature", 1)
+        GHPullRequest pr1 = mockPr("Fix test setup", 1)
         pr1.getBody() >> """
-		## Changes
-		* ![ADD] new test feature
-		* ![IMPROVE] test suite
-		""".stripIndent()
-
-        GHPullRequest pr2 = mockPr("Fix test setup", 2)
-        pr2.getBody() >> """
 		## Changes
 		* ![FIX] test suite startup
 		* ![FIX] runner test setup code
+		""".stripIndent()
+
+        GHPullRequest pr2 = mockPr("Add custom test feature", 2)
+        pr2.getBody() >> """
+		## Changes
+		* ![IMPROVE] test suite
+		* ![ADD] new test feature
 		""".stripIndent()
 
         def pullRequests = [pr1,pr2]
@@ -152,10 +152,10 @@ class ReleaseNotesStrategySpec extends Specification {
         mappedResult.changes.keySet().collect {it.category}.containsAll(["ADD", "IMPROVE", "FIX", "FIX"])
         mappedResult.changes.keySet().collect {it.text}.containsAll(["new test feature", "test suite", "test suite startup", "runner test setup code"])
 
-        mappedResult.changes[new ChangeNote("ADD", "new test feature")] == pr1
-        mappedResult.changes[new ChangeNote("IMPROVE", "test suite")] == pr1
-        mappedResult.changes[new ChangeNote("FIX", "test suite startup")] == pr2
-        mappedResult.changes[new ChangeNote("FIX", "runner test setup code")] == pr2
+        mappedResult.changes[new ChangeNote("ADD", "new test feature")] == pr2
+        mappedResult.changes[new ChangeNote("IMPROVE", "test suite")] == pr2
+        mappedResult.changes[new ChangeNote("FIX", "test suite startup")] == pr1
+        mappedResult.changes[new ChangeNote("FIX", "runner test setup code")] == pr1
     }
 
     def "renders provided change list"() {
@@ -163,14 +163,23 @@ class ReleaseNotesStrategySpec extends Specification {
         List<GHCommit> logs = generateMockLog(commitMessages.size())
 
         and: "a custom pull requests with change lists"
-        GHPullRequest pr1 = mockPr("Add custom test feature", 1)
+        GHPullRequest pr1 = mockPr("Fix test setup", 1)
         pr1.getBody() >> """
 		## Changes
-		* ![ADD] new test feature
+		* ![ADD] test suite startup
+		* ![FIX] runner test setup code
+		""".stripIndent()
+        GHPullRequest pr2 = mockPr("Add custom test feature", 2)
+        pr2.getBody() >> """
+		## Changes
 		* ![IMPROVE] test suite
+		* ![FIX] test suite tools
+		* ![FIX] test suite startup
+		* ![ADD] new test feature
 		""".stripIndent()
 
-        def pullRequests = [pr1]
+
+        def pullRequests = [pr1, pr2]
 
         and: "a changeset"
         def changes = new BaseChangeSet("test",null,null,logs,pullRequests)
@@ -179,15 +188,22 @@ class ReleaseNotesStrategySpec extends Specification {
         def result = strategy.render(changes)
         println(result)
         then:
-        result.stripIndent().trim() == """
-		## Changes
-		
-		* ![ADD] new test feature [[#1](https://github.com/test/issue/1)] [@TestUser](https://github.com/TestUser)
-		* ![IMPROVE] test suite [[#1](https://github.com/test/issue/1)] [@TestUser](https://github.com/TestUser)
-		
-		[ADD]: https://resources.atlas.wooga.com/icons/icon_add.svg
-		[IMPROVE]: https://resources.atlas.wooga.com/icons/icon_improve.svg
-		""".stripIndent().trim()
+        def expectedResult = """
+        ## Changes
+    
+        * ![ADD] new test feature [[#2](https://github.com/test/issue/2)] [@TestUser](https://github.com/TestUser)
+        * ![ADD] test suite startup [[#1](https://github.com/test/issue/1)] [@TestUser](https://github.com/TestUser)
+        * ![FIX] test suite startup [[#2](https://github.com/test/issue/2)] [@TestUser](https://github.com/TestUser)
+        * ![FIX] test suite tools [[#2](https://github.com/test/issue/2)] [@TestUser](https://github.com/TestUser)
+        * ![FIX] runner test setup code [[#1](https://github.com/test/issue/1)] [@TestUser](https://github.com/TestUser)
+        * ![IMPROVE] test suite [[#2](https://github.com/test/issue/2)] [@TestUser](https://github.com/TestUser)
+        
+        [ADD]: https://resources.atlas.wooga.com/icons/icon_add.svg
+        [FIX]: https://resources.atlas.wooga.com/icons/icon_fix.svg
+        [IMPROVE]: https://resources.atlas.wooga.com/icons/icon_improve.svg
+		""".stripIndent().trim().normalize()
+        def res = result.stripIndent().trim().normalize()
+        res == expectedResult
     }
 
     def "renders logs and pull requests when no change list can be generated"() {

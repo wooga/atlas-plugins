@@ -19,7 +19,6 @@ package wooga.gradle.plugins
 import com.gradle.publish.PluginBundleExtension
 import com.gradle.publish.PublishPlugin
 import nebula.plugin.release.ReleasePlugin
-import nebula.plugin.release.git.base.ReleasePluginExtension
 import nebula.plugin.release.git.base.ReleaseVersion
 import org.ajoberstar.grgit.gradle.GrgitPlugin
 import org.gradle.api.Action
@@ -80,6 +79,7 @@ class PluginsPlugin implements Plugin<Project> {
     static final String DOC_EXPORT_DIR = "docs/api"
     static final String PUBLISH_GROOVY_DOCS_TASK_NAME = "publishGroovydocs"
     static final String RC_TASK = "rc"
+    public static final String RELEASE_NOTES_TASK_NAME = "releaseNotes"
 
 
     @Override
@@ -106,9 +106,9 @@ class PluginsPlugin implements Plugin<Project> {
         configureTestReportOutput(project)
         configureJacocoTestReport(project, integrationTestTask, testTask)
         configureCoverallsTask(project)
+        configureReleaseNotes(project)
         configureTaskRuntimeDependencies(project)
         configureGradleDocsTask(project)
-        configureReleaseNotes(project)
 
         setupRepositories(project)
         setupDependencies(project)
@@ -123,7 +123,7 @@ class PluginsPlugin implements Plugin<Project> {
     }
 
     private static void configureReleaseNotes(Project project) {
-        def releaseNotesProvider = project.tasks.register("releaseNotes", GenerateReleaseNotes)
+        def releaseNotesProvider = project.tasks.register(RELEASE_NOTES_TASK_NAME, GenerateReleaseNotes)
         releaseNotesProvider.configure { task ->
 
             task.from.set(project.provider {
@@ -138,18 +138,6 @@ class PluginsPlugin implements Plugin<Project> {
             task.strategy.set(new ReleaseNotesStrategy())
         }
     }
-//        generateReleaseNotes {
-//            branch = project.grgit.branch.current.name
-//            output.set(file)
-//            from.set(versionBuilder.version.map({ version ->
-//                if (version.previousVersion) {
-//                    return "v${version.previousVersion}".toString()
-//                }
-//                null
-//            }))
-//
-//            strategy.set(new net.wooga.strive.StriveReleaseNotesStrategy())
-//        }
 
     private static void setupRepositories(Project project) {
         def repositories = project.repositories
@@ -234,11 +222,14 @@ class PluginsPlugin implements Plugin<Project> {
         postReleaseTask.dependsOn publishTask
         publishTask.mustRunAfter releaseTask
 
-        GithubPublish githubPublishTask = (GithubPublish) tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
+        GenerateReleaseNotes releaseNotesTask = tasks.getByName(RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes //check
+        GithubPublish githubPublishTask = (GithubPublish) tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME) //check
         githubPublishTask.onlyIf(new ProjectStatusTaskSpec('candidate', 'release'))
         githubPublishTask.tagName = "v${project.version}"
         githubPublishTask.setReleaseName(project.version.toString())
         githubPublishTask.setPrerelease({ project.status != 'release' })
+        githubPublishTask.body.set(releaseNotesTask.output.map{it.asFile.text })
+        githubPublishTask.dependsOn(releaseNotesTask)
     }
 
     private static configureCoverallsTask(final Project project) {

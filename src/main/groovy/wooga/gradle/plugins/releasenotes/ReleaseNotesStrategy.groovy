@@ -26,10 +26,10 @@ class ReleaseNotesStrategy extends AbstractGeneratorStrategy<ChangeSet, BaseChan
 				}
 				return null
 			} - null
-			changeNotes.each { changeNote -> m[changeNotes] = pr }
+			changeNotes.each { changeNote -> m[changeNote] = pr }
 			return m
 		}
 
-		new ChangeSet(changes, changesMap)
+		return new ChangeSet(changes, changesMap)
 	}
 }
