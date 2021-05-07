@@ -16,27 +16,51 @@
 
 package wooga.gradle.plugins
 
+import com.wooga.spock.extensions.github.GithubRepository
+import com.wooga.spock.extensions.github.Repository
+import com.wooga.spock.extensions.github.api.RateLimitHandlerWait
+import com.wooga.spock.extensions.github.api.TravisBuildNumberPostFix
+import org.ajoberstar.grgit.Credentials
 import org.ajoberstar.grgit.Grgit
+import org.ajoberstar.grgit.service.BranchService
 import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
 import spock.lang.IgnoreIf
+import spock.lang.Shared
 import spock.lang.Unroll
 
 class PluginsPluginIntegrationSpec extends IntegrationSpec {
 
+    @Shared
+    @GithubRepository(
+            usernameEnv = "ATLAS_GITHUB_INTEGRATION_USER",
+            tokenEnv = "ATLAS_GITHUB_INTEGRATION_PASSWORD",
+            resetAfterTestCase = false,
+            repositoryNamePrefix = "atlas-github-plugins-integration",
+            repositoryPostFixProvider = TravisBuildNumberPostFix.class,
+            rateLimitHandler = RateLimitHandlerWait
+    )
+    Repository repo
     Grgit git
-
+    def setupSpec() {
+        repo.commit('initial commit')
+        repo.createRelease("0.0.1", "v0.0.1")
+    }
     def setup() {
+        def remote = "origin"
         git = Grgit.init(dir: projectDir)
-        git.commit(message: 'initial commit')
-        git.tag.add(name: "v0.0.1")
+        git.remote.add(name: remote, url: repo.httpTransportUrl)
+        git.fetch(remote: remote)
+        git.branch.add(name: repo.defaultBranch.name, startPoint: "${remote}/${repo.defaultBranch.name}")
+        git.checkout(branch: repo.defaultBranch.name)
+        git.pull(remote: "${remote}", branch: repo.defaultBranch.name)
 
         createFile(".gitignore") << """
         **/*
         """.stripIndent()
 
         buildFile << """
-
+        
         group = 'test'
         ${applyPlugin(PluginsPlugin)}
 
@@ -46,6 +70,10 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
             maven {
                 url "https://plugins.gradle.org/m2/"
             }
+        }
+
+        github {
+            repositoryName = "${repo.fullName}"
         }
 
         dependencies {

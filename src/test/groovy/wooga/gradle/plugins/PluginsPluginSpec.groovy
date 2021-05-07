@@ -114,8 +114,8 @@ class PluginsPluginSpec extends ProjectSpec {
         project.plugins.apply(PLUGIN_NAME)
 
         then:
-        def task = project.tasks.findByName(taskName)
-        task.getDependsOn().findAll {Task t ->
+        Task task = project.tasks.findByName(taskName)
+        task.getTaskDependencies().getDependencies(task).findAll {t ->
             dependencies.find {
                 depName -> t.name == depName
             }
@@ -124,7 +124,6 @@ class PluginsPluginSpec extends ProjectSpec {
         where:
         taskName                                | dependencies
         GithubPublishPlugin.PUBLISH_TASK_NAME   | [PluginsPlugin.RELEASE_NOTES_TASK_NAME]
-        ReleasePlugin.POST_RELEASE_TASK_NAME    | [GithubPublishPlugin.PUBLISH_TASK_NAME]
     }
 
     def "configures integration test task"() {

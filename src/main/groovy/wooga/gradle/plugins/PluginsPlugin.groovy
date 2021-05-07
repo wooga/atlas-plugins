@@ -125,9 +125,8 @@ class PluginsPlugin implements Plugin<Project> {
     private static void configureReleaseNotes(Project project) {
         def releaseNotesProvider = project.tasks.register(RELEASE_NOTES_TASK_NAME, GenerateReleaseNotes)
         releaseNotesProvider.configure { task ->
-
             task.from.set(project.provider {
-                def version = project.version.inferedVersion as ReleaseVersion
+                def version = project.version.inferredVersion as ReleaseVersion
                 if (version.previousVersion) {
                     return "v${version.previousVersion}".toString()
                 }
@@ -227,7 +226,7 @@ class PluginsPlugin implements Plugin<Project> {
         githubPublishTask.onlyIf(new ProjectStatusTaskSpec('candidate', 'release'))
         githubPublishTask.tagName = "v${project.version}"
         githubPublishTask.setReleaseName(project.version.toString())
-        githubPublishTask.setPrerelease({ project.status != 'release' })
+        githubPublishTask.prerelease.set(project.provider { project.status != 'release' })
         githubPublishTask.body.set(releaseNotesTask.output.map{it.asFile.text })
         githubPublishTask.dependsOn(releaseNotesTask)
     }

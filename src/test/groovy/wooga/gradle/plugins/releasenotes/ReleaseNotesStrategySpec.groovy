@@ -207,19 +207,15 @@ class ReleaseNotesStrategySpec extends Specification {
     }
 
     def "renders logs and pull requests when no change list can be generated"() {
-        given: "some basic changes"
-        List<GHCommit> logs = generateMockLog(commitMessages.size())
-
-        and: "a custom pull requests with change lists"
+        given: "a custom pull requests with change lists"
         GHPullRequest pr1 = mockPr("Add custom test feature", 1)
         pr1.getBody() >> """
 		Just a description
 		""".stripIndent()
-
         def pullRequests = [pr1]
 
         and: "a changeset"
-        def changes = new BaseChangeSet("test",null,null,logs,pullRequests)
+        def changes = new BaseChangeSet("test",null,null,null, pullRequests)
 
         when:
         def result = strategy.render(changes)
@@ -230,13 +226,6 @@ class ReleaseNotesStrategySpec extends Specification {
  
 		* [[#1](https://github.com/test/issue/1)] Add custom test feature [@TestUser](https://github.com/TestUser)
 		 
-		## Commits
-		 
-		* [[12345600](https://github.com/test/commit/1234560028791583287915832879158328791583)] Setup custom test runner [@TestUser](https://github.com/TestUser)
-		* [[12345601](https://github.com/test/commit/1234560128791583287915832879158328791583)] Improve overall Architecture [@TestUser](https://github.com/TestUser)
-		* [[12345602](https://github.com/test/commit/1234560228791583287915832879158328791583)] Fix new awesome test [@TestUser](https://github.com/TestUser)
-		* [[12345603](https://github.com/test/commit/1234560328791583287915832879158328791583)] Add awesome test [@TestUser](https://github.com/TestUser)
-		* [[12345604](https://github.com/test/commit/1234560428791583287915832879158328791583)] Fix tests in integration spec [@TestUser](https://github.com/TestUser)
 		""".stripIndent().trim()
     }
 }

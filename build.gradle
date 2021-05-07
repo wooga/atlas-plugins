@@ -58,7 +58,7 @@ dependencies {
         }
     }
     testImplementation('junit:junit:[4,5)')
-
+    testImplementation 'com.wooga.spock.extensions:spock-github-extension:0.1.2'
     testImplementation 'org.ajoberstar.grgit:grgit-core:[4,5)'
 }
 
