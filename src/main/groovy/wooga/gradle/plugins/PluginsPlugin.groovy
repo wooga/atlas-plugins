@@ -18,8 +18,6 @@ package wooga.gradle.plugins
 
 import com.gradle.publish.PluginBundleExtension
 import com.gradle.publish.PublishPlugin
-import nebula.plugin.release.ReleasePlugin
-import nebula.plugin.release.git.base.ReleaseVersion
 import org.ajoberstar.grgit.gradle.GrgitPlugin
 import org.gradle.api.Action
 import org.gradle.api.Plugin
@@ -52,6 +50,10 @@ import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
 import wooga.gradle.githubReleaseNotes.tasks.GenerateReleaseNotes
 import wooga.gradle.plugins.releasenotes.ReleaseNotesStrategy
+import wooga.gradle.version.VersionCodeScheme
+import wooga.gradle.version.VersionPlugin
+import wooga.gradle.version.VersionPluginExtension
+import wooga.gradle.version.VersionScheme
 
 import java.util.concurrent.Callable
 
@@ -76,7 +78,6 @@ class PluginsPlugin implements Plugin<Project> {
     private static final String INTEGRATION_TEST_SOURCE = "src/integrationTest/groovy"
     static final String DOC_EXPORT_DIR = "docs/api"
     static final String PUBLISH_GROOVY_DOCS_TASK_NAME = "publishGroovydocs"
-    static final String RC_TASK = "rc"
     public static final String RELEASE_NOTES_TASK_NAME = "releaseNotes"
 
 
@@ -89,22 +90,23 @@ class PluginsPlugin implements Plugin<Project> {
             apply(JacocoPlugin)
             apply(MavenPublishPlugin)
             apply(PublishPlugin)
-            apply(ReleasePlugin)
             apply(CoverallsPlugin)
+            apply(VersionPlugin)
             apply(GithubPlugin)
             apply(GrgitPlugin)
             apply(GithubReleaseNotesPlugin)
         }
 
-        applyRCtoCandidateAlias(project)
 
         Task integrationTestTask = setupIntegrationTestTask(project, project.tasks)
         Task testTask = project.tasks.getByName(JavaPlugin.TEST_TASK_NAME)
 
+        configureVersionPluginExtension(project)
         configureTestReportOutput(project)
         configureJacocoTestReport(project, integrationTestTask, testTask)
         configureCoverallsTask(project)
         configureReleaseNotes(project)
+        configureGithubPublishTask(project)
         configureTaskRuntimeDependencies(project)
         configureGradleDocsTask(project)
 
@@ -123,16 +125,28 @@ class PluginsPlugin implements Plugin<Project> {
     private static void configureReleaseNotes(Project project) {
         def releaseNotesProvider = project.tasks.register(RELEASE_NOTES_TASK_NAME, GenerateReleaseNotes)
         releaseNotesProvider.configure { task ->
-            task.from.set(project.provider {
-                def version = project.version.inferredVersion as ReleaseVersion
-                if (version.previousVersion) {
-                    return "v${version.previousVersion}".toString()
-                }
-                return null
-            } )
-            task.branch.set(project.extensions.grgit.branch.current.name as String)
-            task.output.set(new File("${project.buildDir}/outputs/release-notes.md"))
-            task.strategy.set(new ReleaseNotesStrategy())
+            def versionExt = project.extensions.findByType(VersionPluginExtension)
+            if (versionExt) {
+                task.from.set(versionExt.version.map { version ->
+                    if(version.previousVersion) {
+                        return "v${version.previousVersion}"
+                    } else {
+                        return null
+                    }
+                })
+                task.branch.set(project.extensions.grgit.branch.current.name as String)
+                task.output.set(new File("${project.buildDir}/outputs/release-notes.md"))
+                task.strategy.set(new ReleaseNotesStrategy())
+            }
+        }
+    }
+
+
+    private static void configureVersionPluginExtension(Project project) {
+        def versionExt = project.extensions.findByType(VersionPluginExtension)
+        if(versionExt) {
+            versionExt.versionScheme.convention(VersionScheme.semver2)
+            versionExt.versionCodeScheme.convention(VersionCodeScheme.releaseCount)
         }
     }
 
@@ -193,40 +207,40 @@ class PluginsPlugin implements Plugin<Project> {
 
     private static configureTaskRuntimeDependencies(final Project project) {
         TaskContainer tasks = project.tasks
-        TaskContainer rootTasks = project.rootProject.tasks
 
-        Task releaseCheckTask = rootTasks.getByName(ReleasePlugin.RELEASE_CHECK_TASK_NAME)
-        Task postReleaseTask = rootTasks.getByName(ReleasePlugin.POST_RELEASE_TASK_NAME)
-        Task snapshotTask = rootTasks.getByName(ReleasePlugin.SNAPSHOT_TASK_NAME)
-        Task finalTask = rootTasks.getByName(ReleasePlugin.FINAL_TASK_NAME)
-        Task candidateTask = rootTasks.getByName(ReleasePlugin.CANDIDATE_TASK_NAME)
-        Task releaseTask = rootTasks.getByName("release")
-        Task publishPluginsTask = tasks.getByName("publishPlugins")
+        Task finalTask = project.tasks.create("final")
+        Task rcTask = project.tasks.create("rc")
+        Task snapshotTask = project.tasks.create("snapshot")
+
+        Task publishPluginsTask = tasks.getByName("publishPlugins") //from gradle PublishPlugin
         Task publishToLocalMavenTask = tasks.getByName(MavenPublishPlugin.PUBLISH_LOCAL_LIFECYCLE_TASK_NAME)
         Task checkTask = tasks.getByName(LifecycleBasePlugin.CHECK_TASK_NAME)
-        Task assembleTask = tasks.getByName(LifecycleBasePlugin.ASSEMBLE_TASK_NAME)
         Task publishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
+        Task releaseNotesTask = tasks.getByName(RELEASE_NOTES_TASK_NAME)
+        Task githubPublishTask = tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
 
-        releaseCheckTask.dependsOn checkTask
-        releaseTask.dependsOn assembleTask
-        finalTask.dependsOn publishPluginsTask
-        candidateTask.dependsOn publishPluginsTask
-        snapshotTask.dependsOn publishToLocalMavenTask
 
-        publishToLocalMavenTask.mustRunAfter postReleaseTask
-        publishPluginsTask.mustRunAfter postReleaseTask
+        finalTask.dependsOn publishTask
+        rcTask.dependsOn publishTask
+        snapshotTask.dependsOn checkTask, publishToLocalMavenTask
+        publishToLocalMavenTask.mustRunAfter checkTask
 
-        postReleaseTask.dependsOn publishTask
-        publishTask.mustRunAfter releaseTask
+        publishTask.dependsOn checkTask, publishPluginsTask, githubPublishTask
+        publishPluginsTask.mustRunAfter checkTask
+        githubPublishTask.mustRunAfter publishPluginsTask
 
-        GenerateReleaseNotes releaseNotesTask = (GenerateReleaseNotes) tasks.getByName(RELEASE_NOTES_TASK_NAME)
+        githubPublishTask.dependsOn releaseNotesTask
+    }
+
+    private static void configureGithubPublishTask(Project project) {
+        TaskContainer tasks = project.tasks
+        GenerateReleaseNotes releaseNotesTask = tasks.getByName(RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes
         GithubPublish githubPublishTask = (GithubPublish) tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
         githubPublishTask.onlyIf(new ProjectStatusTaskSpec('candidate', 'release'))
         githubPublishTask.tagName = "v${project.version}"
         githubPublishTask.setReleaseName(project.version.toString())
         githubPublishTask.prerelease.set(project.provider { project.status != 'release' })
         githubPublishTask.body.set(releaseNotesTask.output.map{it.asFile.text })
-        githubPublishTask.dependsOn(releaseNotesTask)
     }
 
     private static configureCoverallsTask(final Project project) {
@@ -327,25 +341,4 @@ class PluginsPlugin implements Plugin<Project> {
         sourceSet.resources.srcDir("src/" + sourceSet.getName() + "/resources");
         sourceSet
     }
-
-/**
- * The {@code NebularRelease} plugin will provide slightly better error messages when using the official
- * cli tasks (final, candidate, snapshot, ...). Because of internal naming reasons it makes sense for us to use
- * {@code rc} instead of {@code candidate}. All other resources are named with the
- * pattern (final, rc and snapshot). I used a custom task with the name {@code rc} which depends on
- * {@code candidate} but this will fall through the error check in {@code NebularRelease}. So instead we
- * now change the cli tasklist on the fly. If we find the {@code rc} taskname in the cli tasklist we remove it
- * and add {@code candidate} instead.
- * @param project
- * @return
- */
-    static void applyRCtoCandidateAlias(Project project) {
-        List<String> cliTasks = project.rootProject.gradle.startParameter.taskNames
-        if (cliTasks.contains(RC_TASK)) {
-            cliTasks.remove(RC_TASK)
-            cliTasks.add(ReleasePlugin.CANDIDATE_TASK_NAME)
-            project.rootProject.gradle.startParameter.setTaskNames(cliTasks)
-        }
-    }
-
 }
