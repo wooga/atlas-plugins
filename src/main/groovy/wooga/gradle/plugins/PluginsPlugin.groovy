@@ -221,8 +221,8 @@ class PluginsPlugin implements Plugin<Project> {
         postReleaseTask.dependsOn publishTask
         publishTask.mustRunAfter releaseTask
 
-        GenerateReleaseNotes releaseNotesTask = tasks.getByName(RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes //check
-        GithubPublish githubPublishTask = (GithubPublish) tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME) //check
+        GenerateReleaseNotes releaseNotesTask = (GenerateReleaseNotes) tasks.getByName(RELEASE_NOTES_TASK_NAME)
+        GithubPublish githubPublishTask = (GithubPublish) tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
         githubPublishTask.onlyIf(new ProjectStatusTaskSpec('candidate', 'release'))
         githubPublishTask.tagName = "v${project.version}"
         githubPublishTask.setReleaseName(project.version.toString())
