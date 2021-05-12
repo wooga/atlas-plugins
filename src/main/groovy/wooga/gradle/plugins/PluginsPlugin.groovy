@@ -19,6 +19,8 @@ package wooga.gradle.plugins
 import com.gradle.publish.PluginBundleExtension
 import com.gradle.publish.PublishPlugin
 import nebula.plugin.release.ReleasePlugin
+import nebula.plugin.release.git.base.ReleaseVersion
+import org.ajoberstar.grgit.gradle.GrgitPlugin
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -47,6 +49,11 @@ import org.kt3k.gradle.plugin.CoverallsPlugin
 import wooga.gradle.github.GithubPlugin
 import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
+import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
+import wooga.gradle.githubReleaseNotes.tasks.GenerateReleaseNotes
+import wooga.gradle.plugins.releasenotes.ReleaseNotesStrategy
+
+//import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
 
 import java.util.concurrent.Callable
 
@@ -72,6 +79,7 @@ class PluginsPlugin implements Plugin<Project> {
     static final String DOC_EXPORT_DIR = "docs/api"
     static final String PUBLISH_GROOVY_DOCS_TASK_NAME = "publishGroovydocs"
     static final String RC_TASK = "rc"
+    public static final String RELEASE_NOTES_TASK_NAME = "releaseNotes"
 
 
     @Override
@@ -82,12 +90,13 @@ class PluginsPlugin implements Plugin<Project> {
             apply(IdeaPlugin)
             apply(JacocoPlugin)
             apply(MavenPublishPlugin)
+            apply(PublishPlugin)
+            apply(ReleasePlugin)
+            apply(CoverallsPlugin)
+            apply(GithubPlugin)
+            apply(GrgitPlugin)
+            apply(GithubReleaseNotesPlugin)
         }
-
-        project.pluginManager.apply(PublishPlugin)
-        project.pluginManager.apply(ReleasePlugin)
-        project.pluginManager.apply(CoverallsPlugin)
-        project.pluginManager.apply(GithubPlugin)
 
         applyRCtoCandidateAlias(project)
 
@@ -97,6 +106,7 @@ class PluginsPlugin implements Plugin<Project> {
         configureTestReportOutput(project)
         configureJacocoTestReport(project, integrationTestTask, testTask)
         configureCoverallsTask(project)
+        configureReleaseNotes(project)
         configureTaskRuntimeDependencies(project)
         configureGradleDocsTask(project)
 
@@ -109,6 +119,22 @@ class PluginsPlugin implements Plugin<Project> {
                     from project.components.java
                 }
             }
+        }
+    }
+
+    private static void configureReleaseNotes(Project project) {
+        def releaseNotesProvider = project.tasks.register(RELEASE_NOTES_TASK_NAME, GenerateReleaseNotes)
+        releaseNotesProvider.configure { task ->
+            task.from.set(project.provider {
+                def version = project.version.inferredVersion as ReleaseVersion
+                if (version.previousVersion) {
+                    return "v${version.previousVersion}".toString()
+                }
+                return null
+            } )
+            task.branch.set(project.extensions.grgit.branch.current.name as String)
+            task.output.set(new File("${project.buildDir}/outputs/release-notes.md"))
+            task.strategy.set(new ReleaseNotesStrategy())
         }
     }
 
@@ -195,11 +221,14 @@ class PluginsPlugin implements Plugin<Project> {
         postReleaseTask.dependsOn publishTask
         publishTask.mustRunAfter releaseTask
 
+        GenerateReleaseNotes releaseNotesTask = (GenerateReleaseNotes) tasks.getByName(RELEASE_NOTES_TASK_NAME)
         GithubPublish githubPublishTask = (GithubPublish) tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
         githubPublishTask.onlyIf(new ProjectStatusTaskSpec('candidate', 'release'))
         githubPublishTask.tagName = "v${project.version}"
         githubPublishTask.setReleaseName(project.version.toString())
-        githubPublishTask.setPrerelease({ project.status != 'release' })
+        githubPublishTask.prerelease.set(project.provider { project.status != 'release' })
+        githubPublishTask.body.set(releaseNotesTask.output.map{it.asFile.text })
+        githubPublishTask.dependsOn(releaseNotesTask)
     }
 
     private static configureCoverallsTask(final Project project) {

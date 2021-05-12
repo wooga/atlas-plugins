@@ -17,22 +17,31 @@
 package wooga.gradle.plugins
 
 import com.gradle.publish.PublishPlugin
+import com.gradle.publish.PublishTask
 import nebula.plugin.release.ReleasePlugin
 import nebula.test.ProjectSpec
 import org.ajoberstar.grgit.Grgit
+import org.ajoberstar.grgit.gradle.GrgitPlugin
+import org.gradle.api.DefaultTask
+import org.gradle.api.Task
 import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
+import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.testing.Test
+import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.kt3k.gradle.plugin.CoverallsPlugin
 import spock.lang.Unroll
 import wooga.gradle.github.GithubPlugin
+import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
+import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
+import wooga.gradle.githubReleaseNotes.tasks.GenerateReleaseNotes
 
 class PluginsPluginSpec extends ProjectSpec {
     public static final String PLUGIN_NAME = 'net.wooga.plugins'
@@ -58,15 +67,17 @@ class PluginsPluginSpec extends ProjectSpec {
         project.plugins.hasPlugin(pluginType)
 
         where:
-        pluginName         | pluginType
-        "groovy"           | GroovyPlugin
-        "idea"             | IdeaPlugin
-        "maven-publish"    | MavenPublishPlugin
-        "plugin-publish"   | PublishPlugin
-        "nebula.release"   | ReleasePlugin
-        "jacoco"           | JacocoPlugin
-        "coveralls"        | CoverallsPlugin
-        "net.wooga.github" | GithubPlugin
+        pluginName              | pluginType
+        "groovy"                | GroovyPlugin
+        "idea"                  | IdeaPlugin
+        "maven-publish"         | MavenPublishPlugin
+        "plugin-publish"        | PublishPlugin
+        "nebula.release"        | ReleasePlugin
+        "jacoco"                | JacocoPlugin
+        "coveralls"             | CoverallsPlugin
+        "grgit"                 | GrgitPlugin
+        "net.wooga.github"      | GithubPlugin
+        "github-release-notes"  | GithubReleaseNotesPlugin
     }
 
     @Unroll("creates the task #taskName")
@@ -86,6 +97,33 @@ class PluginsPluginSpec extends ProjectSpec {
         taskName                                    | taskType
         PluginsPlugin.INTEGRATION_TEST_TASK_NAME    | Test
         PluginsPlugin.PUBLISH_GROOVY_DOCS_TASK_NAME | Sync
+        PluginsPlugin.RELEASE_NOTES_TASK_NAME       | GenerateReleaseNotes
+        LifecycleBasePlugin.CHECK_TASK_NAME         | Task
+        LifecycleBasePlugin.ASSEMBLE_TASK_NAME      | Task
+        PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME| Task
+        GithubPublishPlugin.PUBLISH_TASK_NAME       | GithubPublish
+    }
+
+    @Unroll("task #taskName has runtime dependencies")
+    def 'Task has runtime dependencies'(String taskName, String[] dependencies) {
+        given:
+        assert !project.plugins.hasPlugin(PLUGIN_NAME)
+        assert !project.tasks.findByName(taskName)
+
+        when:
+        project.plugins.apply(PLUGIN_NAME)
+
+        then:
+        Task task = project.tasks.findByName(taskName)
+        task.getTaskDependencies().getDependencies(task).findAll {t ->
+            dependencies.find {
+                depName -> t.name == depName
+            }
+        }
+
+        where:
+        taskName                                | dependencies
+        GithubPublishPlugin.PUBLISH_TASK_NAME   | [PluginsPlugin.RELEASE_NOTES_TASK_NAME]
     }
 
     def "configures integration test task"() {
