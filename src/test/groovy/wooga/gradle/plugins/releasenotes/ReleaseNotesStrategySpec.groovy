@@ -191,12 +191,12 @@ class ReleaseNotesStrategySpec extends Specification {
         def expectedResult = """
         ## Changes
     
-        * ![ADD] new test feature [[#2](https://github.com/test/issue/2)] [@TestUser](https://github.com/TestUser)
-        * ![ADD] test suite startup [[#1](https://github.com/test/issue/1)] [@TestUser](https://github.com/TestUser)
-        * ![FIX] test suite startup [[#2](https://github.com/test/issue/2)] [@TestUser](https://github.com/TestUser)
-        * ![FIX] test suite tools [[#2](https://github.com/test/issue/2)] [@TestUser](https://github.com/TestUser)
-        * ![FIX] runner test setup code [[#1](https://github.com/test/issue/1)] [@TestUser](https://github.com/TestUser)
-        * ![IMPROVE] test suite [[#2](https://github.com/test/issue/2)] [@TestUser](https://github.com/TestUser)
+        * ![ADD] new test feature [#2](https://github.com/test/issue/2) [@TestUser](https://github.com/TestUser)
+        * ![ADD] test suite startup [#1](https://github.com/test/issue/1) [@TestUser](https://github.com/TestUser)
+        * ![FIX] test suite startup [#2](https://github.com/test/issue/2) [@TestUser](https://github.com/TestUser)
+        * ![FIX] test suite tools [#2](https://github.com/test/issue/2) [@TestUser](https://github.com/TestUser)
+        * ![FIX] runner test setup code [#1](https://github.com/test/issue/1) [@TestUser](https://github.com/TestUser)
+        * ![IMPROVE] test suite [#2](https://github.com/test/issue/2) [@TestUser](https://github.com/TestUser)
         
         [ADD]: https://resources.atlas.wooga.com/icons/icon_add.svg
         [FIX]: https://resources.atlas.wooga.com/icons/icon_fix.svg
@@ -224,7 +224,7 @@ class ReleaseNotesStrategySpec extends Specification {
         result.trim() == """
 		## Pull Requests
  
-		* [[#1](https://github.com/test/issue/1)] Add custom test feature [@TestUser](https://github.com/TestUser)
+		* [#1](https://github.com/test/issue/1): Add custom test feature [@TestUser](https://github.com/TestUser)
 		 
 		""".stripIndent().trim()
     }

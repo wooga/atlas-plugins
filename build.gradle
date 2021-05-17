@@ -49,7 +49,7 @@ dependencies {
     implementation 'com.netflix.nebula:nebula-release-plugin:[15,16)'
     implementation 'com.gradle.publish:plugin-publish-plugin:0.14.0'
     implementation 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:[2,3)'
-    implementation 'gradle.plugin.net.wooga.gradle:atlas-GithubReleaseNotes:0.1.0'
+    implementation 'gradle.plugin.net.wooga.gradle:atlas-GithubReleaseNotes:[0.1, 0.2)'
     implementation 'org.ajoberstar.grgit:grgit-gradle:4.1.0'
 
     testImplementation('com.netflix.nebula:nebula-test:[8,9)') {

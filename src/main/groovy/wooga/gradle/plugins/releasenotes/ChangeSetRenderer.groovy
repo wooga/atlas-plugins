@@ -52,7 +52,7 @@ class ChangeSetRenderer implements ChangeRenderer<ChangeSet>, MarkdownRenderer {
 			}
 			links.add(iconLink)
 
-			content.append("* !${iconLink.referenceLink()} ${changeNote.text} [${prLink.link(generateInlineLinks)}] ${userLink.link(generateInlineLinks)}\n")
+			content.append("* !${iconLink.referenceLink()} ${changeNote.text} ${prLink.link(generateInlineLinks)} ${userLink.link(generateInlineLinks)}\n")
 		}
 		return content
 	}
@@ -71,7 +71,7 @@ class ChangeSetRenderer implements ChangeRenderer<ChangeSet>, MarkdownRenderer {
 				links.add(prLink)
 				links.add(userLink)
 			}
-			content.append("* [${prLink.link(generateInlineLinks)}] ${pr.title} ${userLink.link(generateInlineLinks)}\n")
+			content.append("* ${prLink.link(generateInlineLinks)}: ${pr.title} ${userLink.link(generateInlineLinks)}\n")
 		}
 		return content
 	}
