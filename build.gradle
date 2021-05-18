@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
 plugins {
-    id 'net.wooga.plugins' version '2.0.0'
+    id 'net.wooga.plugins' version '2.1.1-rc.1'
 }
 
 group 'net.wooga.gradle'

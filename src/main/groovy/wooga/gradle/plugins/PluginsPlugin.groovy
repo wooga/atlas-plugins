@@ -53,8 +53,6 @@ import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
 import wooga.gradle.githubReleaseNotes.tasks.GenerateReleaseNotes
 import wooga.gradle.plugins.releasenotes.ReleaseNotesStrategy
 
-//import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
-
 import java.util.concurrent.Callable
 
 /**
