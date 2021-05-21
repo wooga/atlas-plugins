@@ -17,12 +17,9 @@
 package wooga.gradle.plugins
 
 import com.gradle.publish.PublishPlugin
-import com.gradle.publish.PublishTask
-import nebula.plugin.release.ReleasePlugin
 import nebula.test.ProjectSpec
 import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.gradle.GrgitPlugin
-import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPluginConvention
@@ -42,6 +39,7 @@ import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
 import wooga.gradle.githubReleaseNotes.tasks.GenerateReleaseNotes
+import wooga.gradle.version.VersionPlugin
 
 class PluginsPluginSpec extends ProjectSpec {
     public static final String PLUGIN_NAME = 'net.wooga.plugins'
@@ -72,9 +70,9 @@ class PluginsPluginSpec extends ProjectSpec {
         "idea"                  | IdeaPlugin
         "maven-publish"         | MavenPublishPlugin
         "plugin-publish"        | PublishPlugin
-        "nebula.release"        | ReleasePlugin
         "jacoco"                | JacocoPlugin
         "coveralls"             | CoverallsPlugin
+        "version"               | VersionPlugin
         "grgit"                 | GrgitPlugin
         "net.wooga.github"      | GithubPlugin
         "github-release-notes"  | GithubReleaseNotesPlugin

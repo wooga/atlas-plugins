@@ -20,9 +20,7 @@ import com.wooga.spock.extensions.github.GithubRepository
 import com.wooga.spock.extensions.github.Repository
 import com.wooga.spock.extensions.github.api.RateLimitHandlerWait
 import com.wooga.spock.extensions.github.api.TravisBuildNumberPostFix
-import org.ajoberstar.grgit.Credentials
 import org.ajoberstar.grgit.Grgit
-import org.ajoberstar.grgit.service.BranchService
 import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
 import spock.lang.IgnoreIf
@@ -100,7 +98,7 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
     }
 
     @Unroll
-    def "task :#lifecycleTask runs :#taskToRun"() {
+    def "task :#lifecycleTask runs '#tasksToRun'"() {
         given: "some dummy test"
         writeTest('src/integrationTest/java/', "wooga.integration", false)
         writeTest('src/test/java/', "wooga.test", false)
@@ -109,21 +107,22 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         def result = runTasks(lifecycleTask, "--dry-run")
 
         then:
-        result.standardOutput.contains(":$taskToRun ")
+        tasksToRun.every {taskToRun ->
+            result.standardOutput.contains(":$taskToRun")
+        }
 
         where:
-        taskToRun             | lifecycleTask
-        "integrationTest"     | "check"
-        "test"                | "check"
-        "check"               | "releaseCheck"
-        "assemble"            | "release"
-        "publishPlugins"      | "final"
-        "publishPlugins"      | "candidate"
-        "publishToMavenLocal" | "snapshot"
+        tasksToRun                                                           | lifecycleTask
+        ["integrationTest", "test"]                                          | "check"
+        ["releaseNotes"]                                                     | "githubPublish"
+        ["check", "publishPlugins", "githubPublish", "publishGroovydocs"]    | "publish"
+        ["publish"]                                                          | "final"
+        ["publish"]                                                          | "rc"
+        ["check", "publishToMavenLocal"]                                     | "snapshot"
     }
 
     @Unroll
-    def "verify :#taskA runs after :#taskB when execute '#execute'"() {
+    def "verify :#taskAfter runs after :#task when execute '#execute'"() {
         given: "some dummy test"
         writeTest('src/integrationTest/java/', "wooga.integration", false)
         writeTest('src/test/java/', "wooga.test", false)
@@ -132,15 +131,16 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         def result = runTasksSuccessfully(*(execute << "--dry-run"))
 
         then:
-        result.standardOutput.indexOf(":$taskA ") > result.standardOutput.indexOf(":$taskB ")
+        result.standardOutput.indexOf(":$taskAfter ") > result.standardOutput.indexOf(":$task ")
 
         where:
-        taskA                 | taskB         | execute
-        "integrationTest"     | "test"        | ["check"]
-        "integrationTest"     | "test"        | ["integrationTest", "test"]
-        "integrationTest"     | "test"        | ["check", "integrationTest", "test",]
-        "publishPlugins"      | "postRelease" | ["publishPlugins", "postRelease"]
-        "publishToMavenLocal" | "postRelease" | ["publishToMavenLocal", "postRelease"]
+        taskAfter             | task              | execute
+        "integrationTest"     | "test"            | ["check"]
+        "integrationTest"     | "test"            | ["integrationTest", "test"]
+        "integrationTest"     | "test"            | ["check", "integrationTest", "test"]
+        "githubPublish"       | "publishPlugins"  | ["publishPlugins", "publish", "final", "rc"]
+        "publishPlugins"      | "check"           | ["publishPlugins", "publish", "final", "rc"]
+        "publishToMavenLocal" | "check"           | ["publishToMavenLocal", "snapshot"]
     }
 
     //Test tasks hangs on windows systems
@@ -248,44 +248,8 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         message = skipped ? "should skip" : "shouldn't skip"
     }
 
-    def writeHelloWorldGroovy(String packageDotted, File baseDir = getProjectDir()) {
-        def path = 'src/main/groovy/' + packageDotted.replace('.', '/') + '/HelloWorld.groovy'
-        def javaFile = createFile(path, baseDir)
-        javaFile << """\
-            package ${packageDotted};
-        
-            class HelloWorld {
-            }
-            """.stripIndent()
-    }
-
     @Unroll
-    def "task :#taskToRun publish groovydocs"() {
-        given: "a future output directory"
-        fork = true
-        def docsExportDir = new File(projectDir, PluginsPlugin.DOC_EXPORT_DIR)
-        def classDoc = new File(docsExportDir, "net/wooga/plugins/test/HelloWorld.html")
-
-        assert !docsExportDir.exists()
-
-        and: "a temp java file"
-        writeHelloWorldGroovy("net.wooga.plugins.test")
-
-        when:
-        runTasksSuccessfully(taskToRun)
-
-        then:
-        docsExportDir.exists()
-        classDoc.exists()
-
-        where:
-        taskToRun           | _
-        "publishGroovydocs" | _
-        "publish"           | _
-    }
-
-    @Unroll
-    def "task :#taskToRun publish API docs with correct settings"() {
+    def "task publishGroovydocs publish API docs with correct settings"() {
         given: "a future output directory"
         fork = true
         def docsExportDir = new File(projectDir, PluginsPlugin.DOC_EXPORT_DIR)
@@ -298,7 +262,6 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
 
         and: "a gradle plugin bundle configured"
         buildFile << """
-
         pluginBundle {
             website = 'https://plugins.com/wooga/atlas-test'
             vcsUrl = 'https://github.com/wooga/atlas-test'
@@ -312,7 +275,6 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
                 }
             }
         }
-
         """.stripIndent()
 
         when:
@@ -325,20 +287,25 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         where:
         taskToRun           | _
         "publishGroovydocs" | _
-        "publish"           | _
     }
 
-    @Unroll
-    def "task :#taskAlias will execute :#taskToRun"() {
-        when:
-        def result = runTasks(taskAlias, "--dry-run")
+    void writePluginMetaFile(String pluginID, String pluginClassname, File baseDir = getProjectDir()) {
+        String path = "src/main/resources/META-INF/gradle-plugins/${pluginID}.properties"
+        def javaFile = createFile(path, baseDir)
+        javaFile << """implementation-class=${pluginClassname}""".stripIndent()
 
-        then:
-        result.standardOutput.contains(":${taskToRun}")
-        !result.standardOutput.contains(":${taskAlias}")
-
-        where:
-        taskAlias | taskToRun
-        "rc"      | "candidate"
     }
+
+    def writeHelloWorldGroovy(String packageDotted, File baseDir = getProjectDir()) {
+        def path = 'src/main/groovy/' + packageDotted.replace('.', '/') + '/HelloWorld.groovy'
+        def javaFile = createFile(path, baseDir)
+        javaFile << """\
+            package ${packageDotted};
+        
+            class HelloWorld {
+            }
+            """.stripIndent()
+        return "${packageDotted}.HelloWorld"
+    }
+
 }
