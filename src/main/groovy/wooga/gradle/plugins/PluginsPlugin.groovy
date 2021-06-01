@@ -44,6 +44,8 @@ import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.gradle.testing.jacoco.tasks.JacocoReportsContainer
 import org.kt3k.gradle.plugin.CoverallsPlugin
+import org.sonarqube.gradle.SonarQubeExtension
+import org.sonarqube.gradle.SonarQubePlugin
 import wooga.gradle.github.GithubPlugin
 import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
@@ -95,13 +97,14 @@ class PluginsPlugin implements Plugin<Project> {
             apply(GithubPlugin)
             apply(GrgitPlugin)
             apply(GithubReleaseNotesPlugin)
+            apply(SonarQubePlugin)
         }
-
 
         Task integrationTestTask = setupIntegrationTestTask(project, project.tasks)
         Task testTask = project.tasks.getByName(JavaPlugin.TEST_TASK_NAME)
 
         configureVersionPluginExtension(project)
+        configureSonarQubeExtension(project)
         configureTestReportOutput(project)
         configureJacocoTestReport(project, integrationTestTask, testTask)
         configureCoverallsTask(project)
@@ -241,6 +244,20 @@ class PluginsPlugin implements Plugin<Project> {
         githubPublishTask.setReleaseName(project.version.toString())
         githubPublishTask.prerelease.set(project.provider { project.status != 'release' })
         githubPublishTask.body.set(releaseNotesTask.output.map{it.asFile.text })
+    }
+
+    private static configureSonarQubeExtension(final Project project) {
+
+        SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
+        sonarExt.properties {
+            property "sonar.projectKey", "wooga_atlas-plugins"
+            property "sonar.host.url", "https://sonar.atlas.wooga.com"
+            property "sonar.sources", "src/main"
+            property "sonar.tests", "src/integrationTest,src/test"
+            property "sonar.jacoco.reportPaths", "build/jacoco/integrationTest.exec,build/jacoco/test.exec"
+        }
+        def sonarTask = project.rootProject.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME)
+        sonarTask.onlyIf { System.getenv('CI') }
     }
 
     private static configureCoverallsTask(final Project project) {

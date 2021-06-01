@@ -232,7 +232,7 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         environmentVariables
 
         when:
-        def result = runTasksSuccessfully(taskToRun)
+        def result = runTasks(taskToRun)
 
         then:
         result.wasSkipped(taskToRun) == skipped
@@ -244,6 +244,11 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         "coveralls" | false   | 'CI' | "0"
         "coveralls" | false   | 'CI' | "some value"
         "coveralls" | true    | 'CI' | null
+        "sonarqube" | false   | 'CI' | "TRUE"
+        "sonarqube" | false   | 'CI' | "1"
+        "sonarqube" | false   | 'CI' | "0"
+        "sonarqube" | false   | 'CI' | "some value"
+        "sonarqube" | true    | 'CI' | null
 
         message = skipped ? "should skip" : "shouldn't skip"
     }

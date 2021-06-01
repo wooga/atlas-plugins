@@ -22,7 +22,6 @@ buildscript {
 
 plugins {
     id 'net.wooga.plugins' version '2.1.1-rc.1'
-    id "org.sonarqube" version "3.0"
 }
 
 group 'net.wooga.gradle'
@@ -42,17 +41,6 @@ pluginBundle {
     }
 }
 
-sonarqube {
-    properties {
-        property "sonar.projectKey", "wooga_atlas-plugins"
-        property "sonar.host.url", "https://sonar.atlas.wooga.com"
-        property "sonar.sources", "src/main"
-        property "sonar.tests", "src/integrationTest,src/test"
-        property "sonar.jacoco.reportPaths", "build/jacoco/integrationTest.exec,build/jacoco/test.exec"
-
-    }
-}
-
 github {
     repositoryName = "wooga/atlas-plugins"
 }
@@ -69,6 +57,7 @@ dependencies {
     implementation 'gradle.plugin.net.wooga.gradle:atlas-GithubReleaseNotes:[0.1, 0.2)'
     implementation 'org.ajoberstar.grgit:grgit-gradle:4.1.0'
     implementation 'gradle.plugin.net.wooga.gradle:atlas-version:0.1.0-rc.8'
+    implementation 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.0'
     testImplementation('com.netflix.nebula:nebula-test:[8,9)') {
         version {
             strictly '8.1.0'

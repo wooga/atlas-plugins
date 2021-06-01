@@ -20,6 +20,7 @@ import com.gradle.publish.PublishPlugin
 import nebula.test.ProjectSpec
 import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.gradle.GrgitPlugin
+import org.gradle.api.Plugin
 import org.gradle.api.Task
 import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPluginConvention
@@ -33,6 +34,9 @@ import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.kt3k.gradle.plugin.CoverallsPlugin
+import org.sonarqube.gradle.SonarQubeExtension
+import org.sonarqube.gradle.SonarQubePlugin
+import org.sonarqube.gradle.SonarQubeTask
 import spock.lang.Unroll
 import wooga.gradle.github.GithubPlugin
 import wooga.gradle.github.publish.GithubPublishPlugin
@@ -53,7 +57,7 @@ class PluginsPluginSpec extends ProjectSpec {
     }
 
     @Unroll("applies plugin #pluginName")
-    def 'Applies other plugins'(String pluginName, Class pluginType) {
+    def 'Applies other plugins'(String pluginName, Class<? extends Plugin> pluginType) {
         given:
         assert !project.plugins.hasPlugin(PLUGIN_NAME)
         assert !project.plugins.hasPlugin(pluginType)
@@ -76,6 +80,7 @@ class PluginsPluginSpec extends ProjectSpec {
         "grgit"                 | GrgitPlugin
         "net.wooga.github"      | GithubPlugin
         "github-release-notes"  | GithubReleaseNotesPlugin
+        "sonarqube"             | SonarQubePlugin
     }
 
     @Unroll("creates the task #taskName")
@@ -190,5 +195,20 @@ class PluginsPluginSpec extends ProjectSpec {
         def ideaModel = project.extensions.getByType(IdeaModel.class)
         ideaModel.module.testSourceDirs.contains(new File(projectDir, "src/integrationTest/groovy"))
         ideaModel.module.scopes["TEST"]["plus"].contains(integrationTestCompileConfiguration)
+    }
+
+    def "configures sonarqube extension"() {
+        given: "project with plugins plugin applied"
+        project.plugins.apply(PLUGIN_NAME)
+
+        expect:
+        SonarQubeTask sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME)
+        def properties = sonarTask.getProperties()
+
+        properties["sonar.projectKey"] == "wooga_atlas-plugins"
+        properties["sonar.host.url"] == "https://sonar.atlas.wooga.com"
+        properties["sonar.sources"] == "src/main"
+        properties["sonar.tests"] == "src/integrationTest,src/test"
+        properties["sonar.jacoco.reportPaths"] == "build/jacoco/integrationTest.exec,build/jacoco/test.exec"
     }
 }
