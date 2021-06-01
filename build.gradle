@@ -41,17 +41,6 @@ pluginBundle {
     }
 }
 
-sonarqube {
-    properties {
-        property "sonar.projectKey", "wooga_atlas-plugins"
-        property "sonar.host.url", "https://sonar.atlas.wooga.com"
-        property "sonar.sources", "src/main"
-        property "sonar.tests", "src/integrationTest,src/test"
-        property "sonar.jacoco.reportPaths", "build/jacoco/integrationTest.exec,build/jacoco/test.exec"
-
-    }
-}
-
 github {
     repositoryName = "wooga/atlas-plugins"
 }
