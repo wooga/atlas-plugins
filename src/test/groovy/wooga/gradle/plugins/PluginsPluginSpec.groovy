@@ -197,7 +197,7 @@ class PluginsPluginSpec extends ProjectSpec {
         ideaModel.module.scopes["TEST"]["plus"].contains(integrationTestCompileConfiguration)
     }
 
-    def "configures sonarqube extension"() {
+    def "configures sonarqube extension with default property values if none provided" (){
         given: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
 
@@ -205,9 +205,32 @@ class PluginsPluginSpec extends ProjectSpec {
         SonarQubeTask sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME)
         def properties = sonarTask.getProperties()
 
+        properties["sonar.projectName"].empty
+        properties["sonar.login"].empty
         properties["sonar.sources"].split(",").any {it.contains("src")}
         properties["sonar.tests"].split(",").any {it.contains("integrationTest")}
         properties["sonar.tests"].split(",").any {it.contains("test")}
         properties["sonar.jacoco.reportPaths"] == "build/jacoco/integrationTest.exec,build/jacoco/test.exec"
+    }
+
+    @Unroll("configures sonarqube extension with project property #propertyName if provided")
+    def "configures sonarqube extension with project property values if provided"(String propertyName, String value) {
+        given: "project with set sonar properties"
+        project.ext[propertyName] = value
+
+        and: "project with plugins plugin applied"
+        project.plugins.apply(PLUGIN_NAME)
+
+        expect:
+        SonarQubeTask sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME) as SonarQubeTask
+        sonarTask.properties[propertyName] == project.property(propertyName)
+
+        where:
+        propertyName                | value
+        "sonar.projectName"         | "sonar_Project-name"
+        "sonar.login"               | "<<login_token>>"
+        "sonar.sources"             | "source/folder"
+        "sonar.tests"               | "test/folder"
+        "sonar.jacoco.reportPaths"  | "jacoco/report.exec"
     }
 }

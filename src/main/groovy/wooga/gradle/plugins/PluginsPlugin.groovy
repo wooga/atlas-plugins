@@ -246,29 +246,46 @@ class PluginsPlugin implements Plugin<Project> {
         githubPublishTask.body.set(releaseNotesTask.output.map{it.asFile.text })
     }
 
-    private static List<String> sourceDirectoriesMatching(JavaPluginConvention javaConvention, Closure closure) {
-        return javaConvention.sourceSets.findAll(closure).
-                collect {SourceSet sourceSet ->
-                    sourceSet.allJava.sourceDirectories.collect {it.absolutePath}
-                }.flatten()
-    }
-
-
     private static configureSonarQubeExtension(final Project project) {
         JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
 
         SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
         sonarExt.properties {
-            property "sonar.sources", sourceDirectoriesMatching(javaConvention) {
-                    !it.name.toLowerCase().contains("test")
-            }.join(",")
-            property "sonar.tests", sourceDirectoriesMatching(javaConvention) {
-                it.name.toLowerCase().contains("test")
-            }.join(",")
-            property "sonar.jacoco.reportPaths", "build/jacoco/integrationTest.exec,build/jacoco/test.exec"
+            property "sonar.projectName",
+                    extProperties(project, "sonar.projectName", "SONAR_PROJECT_NAME", "")
+            property "sonar.login",
+                    extProperties(project, "sonar.login", "SONAR_LOGIN", "")
+            property "sonar.sources",
+                    extProperties(project, "sonar.sources", "SONAR_SOURCES",
+                        sourceDirectoriesMatching(javaConvention){ !it.name.toLowerCase().contains("test") }.join(","))
+            property "sonar.tests",
+                    extProperties(project, "sonar.tests", "SONAR_TESTS",
+                        sourceDirectoriesMatching(javaConvention) { it.name.toLowerCase().contains("test") }.join(","))
+            property "sonar.jacoco.reportPaths",
+                    extProperties(project,
+                "sonar.jacoco.reportPaths", "SONAR_JACOCO_REPORT_PATHS",
+                    "build/jacoco/integrationTest.exec,build/jacoco/test.exec")
         }
         def sonarTask = project.rootProject.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME)
         sonarTask.onlyIf { System.getenv('CI') }
+    }
+
+    private static String extProperties(final Project project,
+                                        String projectPropertyKey, String envVarKey, String defaultValue) {
+        if(project.hasProperty(projectPropertyKey)) {
+            return project.property(projectPropertyKey)
+        } else if(System.getenv().containsKey(envVarKey)) {
+            return System.getenv(envVarKey)
+        } else {
+            return defaultValue;
+        }
+    }
+
+    private static List<String> sourceDirectoriesMatching(JavaPluginConvention javaConvention, Closure closure) {
+        return javaConvention.sourceSets.findAll(closure).
+                collect {SourceSet sourceSet ->
+                    sourceSet.allJava.sourceDirectories.collect {it.absolutePath}
+                }.flatten()
     }
 
     private static configureCoverallsTask(final Project project) {
