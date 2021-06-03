@@ -246,14 +246,25 @@ class PluginsPlugin implements Plugin<Project> {
         githubPublishTask.body.set(releaseNotesTask.output.map{it.asFile.text })
     }
 
+    private static List<String> sourceDirectoriesMatching(JavaPluginConvention javaConvention, Closure closure) {
+        return javaConvention.sourceSets.findAll(closure).
+                collect {SourceSet sourceSet ->
+                    sourceSet.allJava.sourceDirectories.collect {it.absolutePath}
+                }.flatten()
+    }
+
+
     private static configureSonarQubeExtension(final Project project) {
+        JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
 
         SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
         sonarExt.properties {
-            property "sonar.projectKey", "wooga_atlas-plugins"
-            property "sonar.host.url", "https://sonar.atlas.wooga.com"
-            property "sonar.sources", "src/main"
-            property "sonar.tests", "src/integrationTest,src/test"
+            property "sonar.sources", sourceDirectoriesMatching(javaConvention) {
+                    !it.name.toLowerCase().contains("test")
+            }.join(",")
+            property "sonar.tests", sourceDirectoriesMatching(javaConvention) {
+                it.name.toLowerCase().contains("test")
+            }.join(",")
             property "sonar.jacoco.reportPaths", "build/jacoco/integrationTest.exec,build/jacoco/test.exec"
         }
         def sonarTask = project.rootProject.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME)
@@ -271,22 +282,15 @@ class PluginsPlugin implements Plugin<Project> {
     }
 
     private static configureJacocoTestReport(final Project project, final Task integrationTestTask, Task testTask) {
-        project.tasks.withType(JacocoReport, new Action<JacocoReport>() {
-            @Override
-            void execute(JacocoReport jacocoReport) {
-                if (jacocoReport.name == "jacoco" + JavaPlugin.TEST_TASK_NAME.capitalize() + "Report") {
-                    jacocoReport.reports(new Action<JacocoReportsContainer>() {
-                        @Override
-                        void execute(JacocoReportsContainer configurableReports) {
-                            configurableReports.xml.enabled = true
-                            configurableReports.html.enabled = true
-                        }
-                    })
-
-                    jacocoReport.executionData(integrationTestTask, testTask)
+        project.tasks.withType(JacocoReport) { JacocoReport jacocoReport ->
+            if (jacocoReport.name == "jacoco" + JavaPlugin.TEST_TASK_NAME.capitalize() + "Report") {
+                jacocoReport.reports{ JacocoReportsContainer configurableReports ->
+                    configurableReports.xml.enabled = true
+                    configurableReports.html.enabled = true
                 }
+                jacocoReport.executionData(integrationTestTask, testTask)
             }
-        })
+        }
     }
 
     private static void configureTestReportOutput(final Project project) {

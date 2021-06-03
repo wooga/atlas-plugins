@@ -205,10 +205,9 @@ class PluginsPluginSpec extends ProjectSpec {
         SonarQubeTask sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME)
         def properties = sonarTask.getProperties()
 
-        properties["sonar.projectKey"] == "wooga_atlas-plugins"
-        properties["sonar.host.url"] == "https://sonar.atlas.wooga.com"
-        properties["sonar.sources"] == "src/main"
-        properties["sonar.tests"] == "src/integrationTest,src/test"
+        properties["sonar.sources"].split(",").any {it.contains("src")}
+        properties["sonar.tests"].split(",").any {it.contains("integrationTest")}
+        properties["sonar.tests"].split(",").any {it.contains("test")}
         properties["sonar.jacoco.reportPaths"] == "build/jacoco/integrationTest.exec,build/jacoco/test.exec"
     }
 }
