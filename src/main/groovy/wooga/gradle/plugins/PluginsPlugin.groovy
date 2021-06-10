@@ -44,6 +44,8 @@ import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.gradle.testing.jacoco.tasks.JacocoReportsContainer
 import org.kt3k.gradle.plugin.CoverallsPlugin
+import org.sonarqube.gradle.SonarQubeExtension
+import org.sonarqube.gradle.SonarQubePlugin
 import wooga.gradle.github.GithubPlugin
 import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
@@ -95,13 +97,14 @@ class PluginsPlugin implements Plugin<Project> {
             apply(GithubPlugin)
             apply(GrgitPlugin)
             apply(GithubReleaseNotesPlugin)
+            apply(SonarQubePlugin)
         }
-
 
         Task integrationTestTask = setupIntegrationTestTask(project, project.tasks)
         Task testTask = project.tasks.getByName(JavaPlugin.TEST_TASK_NAME)
 
         configureVersionPluginExtension(project)
+        configureSonarQubeExtension(project)
         configureTestReportOutput(project)
         configureJacocoTestReport(project, integrationTestTask, testTask)
         configureCoverallsTask(project)
@@ -243,6 +246,52 @@ class PluginsPlugin implements Plugin<Project> {
         githubPublishTask.body.set(releaseNotesTask.output.map{it.asFile.text })
     }
 
+    private static configureSonarQubeExtension(final Project project) {
+        JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
+
+        SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
+        sonarExt.properties {
+            property "sonar.projectName",
+                    extProperties(project, "sonar.projectName", "SONAR_PROJECT_NAME", "")
+            property "sonar.projectKey",
+                    extProperties(project, "sonar.projectKey", "SONAR_PROJECT_KEY", "")
+            property "sonar.login",
+                    extProperties(project, "sonar.login", "SONAR_LOGIN", "")
+            property "sonar.host.url",
+                    extProperties(project, "sonar.host.url", "SONAR_HOST", "")
+            property "sonar.sources",
+                    extProperties(project, "sonar.sources", "SONAR_SOURCES",
+                        sourceDirectoriesMatching(javaConvention){ !it.name.toLowerCase().contains("test") }.join(","))
+            property "sonar.tests",
+                    extProperties(project, "sonar.tests", "SONAR_TESTS",
+                        sourceDirectoriesMatching(javaConvention) { it.name.toLowerCase().contains("test") }.join(","))
+            property "sonar.jacoco.reportPaths",
+                    extProperties(project,
+                "sonar.jacoco.reportPaths", "SONAR_JACOCO_REPORT_PATHS",
+                    "build/jacoco/integrationTest.exec,build/jacoco/test.exec")
+        }
+        def sonarTask = project.rootProject.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME)
+        sonarTask.onlyIf { System.getenv('CI') }
+    }
+
+    private static String extProperties(final Project project,
+                                        String projectPropertyKey, String envVarKey, String defaultValue) {
+        if(project.hasProperty(projectPropertyKey)) {
+            return project.property(projectPropertyKey)
+        } else if(System.getenv().containsKey(envVarKey)) {
+            return System.getenv(envVarKey)
+        } else {
+            return defaultValue;
+        }
+    }
+
+    private static List<String> sourceDirectoriesMatching(JavaPluginConvention javaConvention, Closure closure) {
+        return javaConvention.sourceSets.findAll(closure).
+                collect {SourceSet sourceSet ->
+                    sourceSet.allJava.sourceDirectories.collect {it.absolutePath}
+                }.flatten()
+    }
+
     private static configureCoverallsTask(final Project project) {
         def coverallsTask = project.tasks.getByName("coveralls")
         coverallsTask.onlyIf(new Spec<Task>() {
@@ -254,22 +303,15 @@ class PluginsPlugin implements Plugin<Project> {
     }
 
     private static configureJacocoTestReport(final Project project, final Task integrationTestTask, Task testTask) {
-        project.tasks.withType(JacocoReport, new Action<JacocoReport>() {
-            @Override
-            void execute(JacocoReport jacocoReport) {
-                if (jacocoReport.name == "jacoco" + JavaPlugin.TEST_TASK_NAME.capitalize() + "Report") {
-                    jacocoReport.reports(new Action<JacocoReportsContainer>() {
-                        @Override
-                        void execute(JacocoReportsContainer configurableReports) {
-                            configurableReports.xml.enabled = true
-                            configurableReports.html.enabled = true
-                        }
-                    })
-
-                    jacocoReport.executionData(integrationTestTask, testTask)
+        project.tasks.withType(JacocoReport) { JacocoReport jacocoReport ->
+            if (jacocoReport.name == "jacoco" + JavaPlugin.TEST_TASK_NAME.capitalize() + "Report") {
+                jacocoReport.reports{ JacocoReportsContainer configurableReports ->
+                    configurableReports.xml.enabled = true
+                    configurableReports.html.enabled = true
                 }
+                jacocoReport.executionData(integrationTestTask, testTask)
             }
-        })
+        }
     }
 
     private static void configureTestReportOutput(final Project project) {
