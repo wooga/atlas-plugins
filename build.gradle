@@ -57,7 +57,7 @@ dependencies {
     implementation 'gradle.plugin.net.wooga.gradle:atlas-GithubReleaseNotes:[0.1, 0.2)'
     implementation 'org.ajoberstar.grgit:grgit-gradle:4.1.0'
     implementation 'gradle.plugin.net.wooga.gradle:atlas-version:0.1.0-rc.8'
-    implementation 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.0'
+    implementation 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.2.0'
     testImplementation('com.netflix.nebula:nebula-test:[8,9)') {
         version {
             strictly '8.1.0'
