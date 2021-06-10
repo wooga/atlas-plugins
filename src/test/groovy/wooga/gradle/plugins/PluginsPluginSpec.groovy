@@ -227,7 +227,9 @@ class PluginsPluginSpec extends ProjectSpec {
 
         where:
         propertyName                | value
-        "sonar.projectName"         | "sonar_Project-name"
+        "sonar.projectName"         | "project-name"
+        "sonar.projectKey"          | "sonar_Project-name"
+        "sonar.host.url"            | "https://sonar.host.tld"
         "sonar.login"               | "<<login_token>>"
         "sonar.sources"             | "source/folder"
         "sonar.tests"               | "test/folder"

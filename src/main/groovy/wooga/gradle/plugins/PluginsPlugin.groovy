@@ -253,8 +253,12 @@ class PluginsPlugin implements Plugin<Project> {
         sonarExt.properties {
             property "sonar.projectName",
                     extProperties(project, "sonar.projectName", "SONAR_PROJECT_NAME", "")
+            property "sonar.projectKey",
+                    extProperties(project, "sonar.projectKey", "SONAR_PROJECT_KEY", "")
             property "sonar.login",
                     extProperties(project, "sonar.login", "SONAR_LOGIN", "")
+            property "sonar.host.url",
+                    extProperties(project, "sonar.host.url", "SONAR_HOST", "")
             property "sonar.sources",
                     extProperties(project, "sonar.sources", "SONAR_SOURCES",
                         sourceDirectoriesMatching(javaConvention){ !it.name.toLowerCase().contains("test") }.join(","))
