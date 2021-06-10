@@ -21,7 +21,7 @@ buildscript {
 }
 
 plugins {
-    id 'net.wooga.plugins' version '2.1.1-rc.1'
+    id 'net.wooga.plugins' version '2.2.0-rc.1'
 }
 
 group 'net.wooga.gradle'
