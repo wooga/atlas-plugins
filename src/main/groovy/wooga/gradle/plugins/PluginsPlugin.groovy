@@ -45,13 +45,17 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.gradle.testing.jacoco.tasks.JacocoReportsContainer
 import org.kt3k.gradle.plugin.CoverallsPlugin
 import org.sonarqube.gradle.SonarQubeExtension
-import org.sonarqube.gradle.SonarQubePlugin
 import wooga.gradle.github.GithubPlugin
+import wooga.gradle.github.base.GithubPluginExtension
 import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
 import wooga.gradle.githubReleaseNotes.tasks.GenerateReleaseNotes
 import wooga.gradle.plugins.releasenotes.ReleaseNotesStrategy
+import wooga.gradle.plugins.sonarqube.PropertyFactory
+import wooga.gradle.plugins.sonarqube.PropertyFactories
+import wooga.gradle.plugins.sonarqube.RepositoryInfo
+import wooga.gradle.plugins.sonarqube.SonarQubeConfiguration
 import wooga.gradle.version.VersionCodeScheme
 import wooga.gradle.version.VersionPlugin
 import wooga.gradle.version.VersionPluginExtension
@@ -97,14 +101,13 @@ class PluginsPlugin implements Plugin<Project> {
             apply(GithubPlugin)
             apply(GrgitPlugin)
             apply(GithubReleaseNotesPlugin)
-            apply(SonarQubePlugin)
+            apply(SonarQubeConfiguration.PLUGIN_CLASS)
         }
 
         Task integrationTestTask = setupIntegrationTestTask(project, project.tasks)
         Task testTask = project.tasks.getByName(JavaPlugin.TEST_TASK_NAME)
-
         configureVersionPluginExtension(project)
-        configureSonarQubeExtension(project)
+        configureSonarQubeExtension(project, SonarQubeConfiguration.withEnvVarPropertyFallback(project))
         configureTestReportOutput(project)
         configureJacocoTestReport(project, integrationTestTask, testTask)
         configureCoverallsTask(project)
@@ -246,50 +249,19 @@ class PluginsPlugin implements Plugin<Project> {
         githubPublishTask.body.set(releaseNotesTask.output.map{it.asFile.text })
     }
 
-    private static configureSonarQubeExtension(final Project project) {
-        JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
+    private static configureSonarQubeExtension(final Project project, SonarQubeConfiguration sonarConfig) {
+        project.afterEvaluate { //TODO check the need for the 'afterEvaluate' after nebula test plugin update
+            SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
+            GithubPluginExtension githubExt = project.extensions.getByType(GithubPluginExtension)
 
-        SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
-        sonarExt.properties {
-            property "sonar.projectName",
-                    extProperties(project, "sonar.projectName", "SONAR_PROJECT_NAME", "")
-            property "sonar.projectKey",
-                    extProperties(project, "sonar.projectKey", "SONAR_PROJECT_KEY", "")
-            property "sonar.login",
-                    extProperties(project, "sonar.login", "SONAR_LOGIN", "")
-            property "sonar.host.url",
-                    extProperties(project, "sonar.host.url", "SONAR_HOST", "")
-            property "sonar.sources",
-                    extProperties(project, "sonar.sources", "SONAR_SOURCES",
-                        sourceDirectoriesMatching(javaConvention){ !it.name.toLowerCase().contains("test") }.join(","))
-            property "sonar.tests",
-                    extProperties(project, "sonar.tests", "SONAR_TESTS",
-                        sourceDirectoriesMatching(javaConvention) { it.name.toLowerCase().contains("test") }.join(","))
-            property "sonar.jacoco.reportPaths",
-                    extProperties(project,
-                "sonar.jacoco.reportPaths", "SONAR_JACOCO_REPORT_PATHS",
-                    "build/jacoco/integrationTest.exec,build/jacoco/test.exec")
+            JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
+            RepositoryInfo ghExtensionRepoInfo = RepositoryInfo.fromGithubExtension(githubExt).orElse(RepositoryInfo.empty)
+
+            sonarExt.properties(sonarConfig.generateSonarProperties(ghExtensionRepoInfo, javaConvention))
+
+            Task sonarTask = project.rootProject.tasks.getByName(SonarQubeConfiguration.TASK_NAME)
+            sonarTask.onlyIf { System.getenv('CI') }
         }
-        def sonarTask = project.rootProject.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME)
-        sonarTask.onlyIf { System.getenv('CI') }
-    }
-
-    private static String extProperties(final Project project,
-                                        String projectPropertyKey, String envVarKey, String defaultValue) {
-        if(project.hasProperty(projectPropertyKey)) {
-            return project.property(projectPropertyKey)
-        } else if(System.getenv().containsKey(envVarKey)) {
-            return System.getenv(envVarKey)
-        } else {
-            return defaultValue;
-        }
-    }
-
-    private static List<String> sourceDirectoriesMatching(JavaPluginConvention javaConvention, Closure closure) {
-        return javaConvention.sourceSets.findAll(closure).
-                collect {SourceSet sourceSet ->
-                    sourceSet.allJava.sourceDirectories.collect {it.absolutePath}
-                }.flatten()
     }
 
     private static configureCoverallsTask(final Project project) {
