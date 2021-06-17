@@ -198,11 +198,28 @@ class PluginsPluginSpec extends ProjectSpec {
         ideaModel.module.scopes["TEST"]["plus"].contains(integrationTestCompileConfiguration)
     }
 
+    def createSrcFile(String folderStr, String filename) {
+        File folder = new File(projectDir, folderStr)
+        folder.mkdirs()
+        File srcFile = new File(folder, filename)
+        srcFile.createNewFile()
+        srcFile << """\
+            class ${filename.split("\\.")[0]} {
+            }
+            """.stripIndent()
+        return folder
+    }
+
     def "configures sonarqube extension with default property values if none provided"(String ghCompany, String ghRepoName, String expectedProjectKey){
         given: "configured github plugin"
         if(!ghCompany.empty && !ghRepoName.empty) {
             project.ext["github.repositoryName"] = "${ghCompany}/${ghRepoName}"
         }
+
+        and: "sample src and test folders"
+        def srcFolder = createSrcFile("src/main/groovy/","Hello.groovy")
+        def testFolder = createSrcFile("src/test/groovy/", "HelloTest.groovy")
+        def intTestFolder = createSrcFile("src/integrationTest/groovy/", "HelloIntegration.groovy")
 
         and: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
@@ -212,12 +229,14 @@ class PluginsPluginSpec extends ProjectSpec {
         SonarQubeTask sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME)
         def properties = sonarTask.getProperties()
 
-        properties["sonar.login"].empty
+        properties["sonar.login"] == null
+        properties["sonar.host.url"] == null
         properties["sonar.projectKey"] == "${ghCompany}_${ghRepoName}"
         properties["sonar.projectName"] == ghRepoName
-        properties["sonar.sources"].split(",").any {it.contains("src")}
-        properties["sonar.tests"].split(",").any {it.contains("integrationTest")}
-        properties["sonar.tests"].split(",").any {it.contains("test")}
+        properties["sonar.sources"] == srcFolder.absolutePath
+        properties["sonar.tests"].split(",").length == 2
+        properties["sonar.tests"].split(",").contains(testFolder.absolutePath)
+        properties["sonar.tests"].split(",").contains(intTestFolder.absolutePath)
         properties["sonar.jacoco.reportPaths"] == "build/jacoco/integrationTest.exec,build/jacoco/test.exec"
 
         where:
