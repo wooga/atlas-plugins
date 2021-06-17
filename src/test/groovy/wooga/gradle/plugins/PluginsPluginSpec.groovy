@@ -229,8 +229,8 @@ class PluginsPluginSpec extends ProjectSpec {
         SonarQubeTask sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME)
         def properties = sonarTask.getProperties()
 
+        //sonar.host.url is not here as CI always will have SONAR_HOST set, so it is never null there.
         properties["sonar.login"] == null
-        properties["sonar.host.url"] == null
         properties["sonar.projectKey"] == "${ghCompany}_${ghRepoName}"
         properties["sonar.projectName"] == ghRepoName
         properties["sonar.sources"] == srcFolder.absolutePath
