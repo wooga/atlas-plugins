@@ -52,8 +52,6 @@ import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
 import wooga.gradle.githubReleaseNotes.tasks.GenerateReleaseNotes
 import wooga.gradle.plugins.releasenotes.ReleaseNotesStrategy
-import wooga.gradle.plugins.sonarqube.PropertyFactory
-import wooga.gradle.plugins.sonarqube.PropertyFactories
 import wooga.gradle.plugins.sonarqube.RepositoryInfo
 import wooga.gradle.plugins.sonarqube.SonarQubeConfiguration
 import wooga.gradle.version.VersionCodeScheme

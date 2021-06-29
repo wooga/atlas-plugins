@@ -31,16 +31,17 @@ class SonarQubeConfiguration {
     Action<? extends SonarQubeProperties> generateSonarProperties(RepositoryInfo repoInfo, JavaPluginConvention javaConvention) {
         return {sonarProps ->
             sonarProps.with {
+                property "sonar.login",
+                        propertyFactory.create("sonar.login", "SONAR_LOGIN", null)
+                property "sonar.host.url",
+                        propertyFactory.create("sonar.host.url", "SONAR_HOST", null)
                 property "sonar.projectName",
                         propertyFactory.create("sonar.projectName", "SONAR_PROJECT_NAME",
                                 repoInfo.repositoryName)
                 property "sonar.projectKey",
                         propertyFactory.create("sonar.projectKey", "SONAR_PROJECT_KEY",
                                 defaultProjectName(repoInfo))
-                property "sonar.login",
-                        propertyFactory.create("sonar.login", "SONAR_LOGIN", "")
-                property "sonar.host.url",
-                        propertyFactory.create("sonar.host.url", "SONAR_HOST", "")
+                //plugin default is sourceSets.main.allJava.srcDirs (with only existing dirs)
                 property "sonar.sources",
                         propertyFactory.create("sonar.sources", "SONAR_SOURCES",
                                 srcDirMatching(javaConvention){ !it.name.toLowerCase().contains("test") }.join(","))
@@ -57,7 +58,7 @@ class SonarQubeConfiguration {
     private static List<String> srcDirMatching(JavaPluginConvention javaConvention, Closure closure) {
         return javaConvention.sourceSets.findAll(closure).
                 collect { SourceSet sourceSet ->
-                    sourceSet.allJava.sourceDirectories.collect {it.absolutePath}
+                    sourceSet.allJava.sourceDirectories.findAll{it.exists()}.collect{it.absolutePath}
                 }.flatten() as List<String>
     }
 }
