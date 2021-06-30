@@ -31,7 +31,6 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.reporting.ReportingExtension
-import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskContainer
@@ -237,14 +236,18 @@ class PluginsPlugin implements Plugin<Project> {
     }
 
     private static void configureGithubPublishTask(Project project) {
-        TaskContainer tasks = project.tasks
-        GenerateReleaseNotes releaseNotesTask = tasks.getByName(RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes
-        GithubPublish githubPublishTask = (GithubPublish) tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
-        githubPublishTask.onlyIf(new ProjectStatusTaskSpec('candidate', 'release'))
-        githubPublishTask.tagName = "v${project.version}"
-        githubPublishTask.setReleaseName(project.version.toString())
-        githubPublishTask.prerelease.set(project.provider { project.status != 'release' })
-        githubPublishTask.body.set(releaseNotesTask.output.map{it.asFile.text })
+        def tasks = project.tasks
+        def releaseNotesTask = tasks.getByName(RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes
+        def publishTaskProvider = tasks.named(GithubPublishPlugin.PUBLISH_TASK_NAME)
+        publishTaskProvider.configure {GithubPublish githubPublishTask ->
+            githubPublishTask.onlyIf(new ProjectStatusTaskSpec("rc", "final"))
+            githubPublishTask.with {
+                releaseName.set(project.version.toString())
+                tagName.set("v${project.version}")
+                prerelease.set(project.properties['release.stage']!='final')
+                body.set(releaseNotesTask.output.map{it.asFile.text })
+            }
+        }
     }
 
     private static configureSonarQubeExtension(final Project project, SonarQubeConfiguration sonarConfig) {
@@ -252,8 +255,8 @@ class PluginsPlugin implements Plugin<Project> {
             SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
             GithubPluginExtension githubExt = project.extensions.getByType(GithubPluginExtension)
 
-            JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
             RepositoryInfo ghExtensionRepoInfo = RepositoryInfo.fromGithubExtension(githubExt).orElse(RepositoryInfo.empty)
+            JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
 
             sonarExt.properties(sonarConfig.generateSonarProperties(ghExtensionRepoInfo, javaConvention))
 
@@ -264,12 +267,7 @@ class PluginsPlugin implements Plugin<Project> {
 
     private static configureCoverallsTask(final Project project) {
         def coverallsTask = project.tasks.getByName("coveralls")
-        coverallsTask.onlyIf(new Spec<Task>() {
-            @Override
-            boolean isSatisfiedBy(Task element) {
-                return System.getenv('CI')
-            }
-        })
+        coverallsTask.onlyIf { System.getenv('CI') }
     }
 
     private static configureJacocoTestReport(final Project project, final Task integrationTestTask, Task testTask) {
