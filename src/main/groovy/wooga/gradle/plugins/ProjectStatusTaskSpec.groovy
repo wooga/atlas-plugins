@@ -20,6 +20,7 @@ import org.gradle.api.Task
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.gradle.api.specs.Spec
+import wooga.gradle.version.VersionPluginExtension
 
 /**
  * A generic <code>Spec&lt;Task&gt;</code> object which can be used to set task execution <code>onlyIf</code>
@@ -56,7 +57,8 @@ class ProjectStatusTaskSpec implements Spec<Task> {
 
     @Override
     boolean isSatisfiedBy(Task task) {
-        Boolean satisfied = validStatusValues.contains(task.project.status)
+        def currentStage = task.project.properties["release.stage"]
+        def satisfied = currentStage in validStatusValues
         logger.info("'project.status' check satisfied $satisfied")
         return satisfied
     }
