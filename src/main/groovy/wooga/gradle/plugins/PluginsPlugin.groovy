@@ -148,8 +148,8 @@ class PluginsPlugin implements Plugin<Project> {
     private static void configureVersionPluginExtension(Project project) {
         def versionExt = project.extensions.findByType(VersionPluginExtension)
         if(versionExt) {
-            versionExt.versionScheme.convention(VersionScheme.semver2)
-            versionExt.versionCodeScheme.convention(VersionCodeScheme.releaseCount)
+            versionExt.versionScheme.set(VersionScheme.semver2)
+            versionExt.versionCodeScheme.set(VersionCodeScheme.releaseCount)
         }
     }
 
