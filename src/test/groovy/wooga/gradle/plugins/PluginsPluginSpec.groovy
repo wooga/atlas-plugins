@@ -44,7 +44,10 @@ import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
 import wooga.gradle.githubReleaseNotes.tasks.GenerateReleaseNotes
+import wooga.gradle.version.VersionCodeScheme
 import wooga.gradle.version.VersionPlugin
+import wooga.gradle.version.VersionPluginExtension
+import wooga.gradle.version.VersionScheme
 
 class PluginsPluginSpec extends ProjectSpec {
     public static final String PLUGIN_NAME = 'net.wooga.plugins'
@@ -198,18 +201,6 @@ class PluginsPluginSpec extends ProjectSpec {
         ideaModel.module.scopes["TEST"]["plus"].contains(integrationTestCompileConfiguration)
     }
 
-    def createSrcFile(String folderStr, String filename) {
-        File folder = new File(projectDir, folderStr)
-        folder.mkdirs()
-        File srcFile = new File(folder, filename)
-        srcFile.createNewFile()
-        srcFile << """\
-            class ${filename.split("\\.")[0]} {
-            }
-            """.stripIndent()
-        return folder
-    }
-
     def "configures sonarqube extension with default property values if none provided"(String ghCompany, String ghRepoName, String expectedProjectKey){
         given: "configured github plugin"
         if(!ghCompany.empty && !ghRepoName.empty) {
@@ -267,5 +258,48 @@ class PluginsPluginSpec extends ProjectSpec {
         "sonar.sources"             | "source/folder"
         "sonar.tests"               | "test/folder"
         "sonar.jacoco.reportPaths"  | "jacoco/report.exec"
+    }
+
+    def "configure version extension with default values"() {
+        given: "project with plugins plugin applied"
+        project.plugins.apply(PLUGIN_NAME)
+        project.evaluate()
+
+        expect: "version extension to exist"
+        VersionPluginExtension versionExt = project.extensions.getByType(VersionPluginExtension)
+        versionExt != null
+        and: "Version scheme to be semver2"
+        versionExt.versionScheme.get() == VersionScheme.semver2
+        and: "Version code scheme to be releaseCount"
+        versionExt.versionCodeScheme.get() == VersionCodeScheme.releaseCount
+    }
+
+    def "override version extension default values with custom ones"() {
+        given: "project with plugins plugin applied"
+        project.plugins.apply(PLUGIN_NAME)
+        project.evaluate()
+
+        and: "existing version extension in the plugin"
+        VersionPluginExtension versionExt = project.extensions.getByType(VersionPluginExtension)
+
+        when: "setting extension properties to distinct values"
+        versionExt.versionScheme("staticMarker")
+        versionExt.versionCodeScheme("releaseCountBasic")
+
+        then: "values should be the ones that has been set"
+        versionExt.versionScheme.get() == VersionScheme.staticMarker
+        versionExt.versionCodeScheme.get() == VersionCodeScheme.releaseCountBasic
+    }
+
+    def createSrcFile(String folderStr, String filename) {
+        File folder = new File(projectDir, folderStr)
+        folder.mkdirs()
+        File srcFile = new File(folder, filename)
+        srcFile.createNewFile()
+        srcFile << """\
+            class ${filename.split("\\.")[0]} {
+            }
+            """.stripIndent()
+        return folder
     }
 }
