@@ -39,6 +39,7 @@ apply plugin: new GroovyScriptEngine(
 group 'net.wooga.gradle'
 description = 'Plugin for wooga gradle plugin development.'
 
+
 pluginBundle {
     website = 'https://wooga.github.io/atlas-plugins'
     vcsUrl = 'https://github.com/wooga/atlas-plugins'
