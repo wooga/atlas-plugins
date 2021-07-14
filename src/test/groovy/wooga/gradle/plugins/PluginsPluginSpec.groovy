@@ -39,7 +39,6 @@ import org.sonarqube.gradle.SonarQubePlugin
 import org.sonarqube.gradle.SonarQubeTask
 import spock.lang.Unroll
 import wooga.gradle.github.GithubPlugin
-import wooga.gradle.github.base.GithubPluginExtension
 import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
@@ -289,6 +288,21 @@ class PluginsPluginSpec extends ProjectSpec {
         then: "values should be the ones that has been set"
         versionExt.versionScheme.get() == VersionScheme.staticMarker
         versionExt.versionCodeScheme.get() == VersionCodeScheme.releaseCountBasic
+    }
+
+    def "configures github publish task"() {
+        given: "project with plugins plugin applied"
+        project.plugins.apply(PLUGIN_NAME)
+        project.evaluate()
+
+        when: "evaulating github publish task"
+        def ghPublishTask = project.tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME) as GithubPublish
+
+        then: "github publish task should be configured"
+        ghPublishTask.releaseName.get() == project.version.toString()
+        ghPublishTask.tagName.get() == "v${project.version}"
+        ghPublishTask.targetCommitish.get() == project.extensions.grgit.branch.current.name as String
+        ghPublishTask.prerelease.get() == (project.properties['release.stage']!='final')
     }
 
     def createSrcFile(String folderStr, String filename) {

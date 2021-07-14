@@ -160,6 +160,7 @@ class PluginsPlugin implements Plugin<Project> {
     }
 
     private static void setupDependencies(Project project) {
+        JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
         DependencyHandler dependencies = project.getDependencies();
         dependencies.add("api", dependencies.gradleApi())
         dependencies.add("testImplementation", 'junit:junit:[4,5)')
@@ -169,6 +170,7 @@ class PluginsPlugin implements Plugin<Project> {
         dependencies.add("testImplementation", 'com.netflix.nebula:nebula-test:[8,9)')
         dependencies.add("testImplementation", 'com.github.stefanbirkner:system-rules:[1,2)')
         dependencies.add("implementation", 'commons-io:commons-io:[2,3)')
+        dependencies.add("integrationTestImplementation", javaConvention.sourceSets.getByName("test").output)
     }
 
     private static def configureGradleDocsTask(final Project project) {
@@ -244,6 +246,7 @@ class PluginsPlugin implements Plugin<Project> {
             githubPublishTask.with {
                 releaseName.set(project.version.toString())
                 tagName.set("v${project.version}")
+                targetCommitish.set(project.extensions.grgit.branch.current.name as String)
                 prerelease.set(project.properties['release.stage']!='final')
                 body.set(releaseNotesTask.output.map{it.asFile.text })
             }
