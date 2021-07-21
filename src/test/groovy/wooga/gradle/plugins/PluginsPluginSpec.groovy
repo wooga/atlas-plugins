@@ -316,4 +316,25 @@ class PluginsPluginSpec extends ProjectSpec {
             """.stripIndent()
         return folder
     }
+
+    def "will force groovy modules to local groovy version"() {
+        given: "project with plugins plugin applied"
+        project.plugins.apply(PLUGIN_NAME)
+
+        expect:
+        def localGroovy = GroovySystem.getVersion()
+        project.configurations.every {
+            //we turn the list of force modules to string to not test against gradle internals
+            def forcedModules = it.resolutionStrategy.forcedModules.toList().collect { it.toString() }
+            forcedModules.containsAll(
+                    [
+                            "org.codehaus.groovy:groovy-all:${localGroovy}".toString(),
+                            "org.codehaus.groovy:groovy-macro:${localGroovy}".toString(),
+                            "org.codehaus.groovy:groovy-nio:${localGroovy}".toString(),
+                            "org.codehaus.groovy:groovy-sql:${localGroovy}".toString(),
+                            "org.codehaus.groovy:groovy-xml:${localGroovy}".toString()
+                    ]
+            )
+        }
+    }
 }
