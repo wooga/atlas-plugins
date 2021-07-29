@@ -127,6 +127,7 @@ class PluginsPlugin implements Plugin<Project> {
     }
 
     private static void configureReleaseNotes(Project project) {
+        Grgit git = project.extensions.grgit
         def releaseNotesProvider = project.tasks.register(RELEASE_NOTES_TASK_NAME, GenerateReleaseNotes)
         releaseNotesProvider.configure { task ->
             def versionExt = project.extensions.findByType(VersionPluginExtension)
@@ -138,7 +139,7 @@ class PluginsPlugin implements Plugin<Project> {
                         return null
                     }
                 })
-                task.branch.set(project.extensions.grgit.branch.current.name as String)
+                task.to.set(git.head().id)
                 task.output.set(new File("${project.buildDir}/outputs/release-notes.md"))
                 task.strategy.set(new ReleaseNotesStrategy())
             }

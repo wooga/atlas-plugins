@@ -43,10 +43,13 @@ import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
 import wooga.gradle.githubReleaseNotes.tasks.GenerateReleaseNotes
+import wooga.gradle.plugins.releasenotes.ReleaseNotesStrategy
 import wooga.gradle.version.VersionCodeScheme
 import wooga.gradle.version.VersionPlugin
 import wooga.gradle.version.VersionPluginExtension
 import wooga.gradle.version.VersionScheme
+
+import java.nio.file.Paths
 
 class PluginsPluginSpec extends ProjectSpec {
     public static final String PLUGIN_NAME = 'net.wooga.plugins'
@@ -303,6 +306,20 @@ class PluginsPluginSpec extends ProjectSpec {
         ghPublishTask.tagName.get() == "v${project.version}"
         ghPublishTask.targetCommitish.get() == project.extensions.grgit.head().id
         ghPublishTask.prerelease.get() == (project.properties['release.stage']!='final')
+    }
+    
+    def "configures release notes task"() {
+        given: "project with plugins plugin applied"
+        project.plugins.apply(PLUGIN_NAME)
+        project.evaluate()
+
+        when: "evaulating release notes task"
+        def ghPublishTask = project.tasks.getByName(PluginsPlugin.RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes
+
+        then: "release notes task should be configured"
+        ghPublishTask.to.get() == project.extensions.grgit.head().id
+        ghPublishTask.output.get().asFile == Paths.get(project.buildDir.toString(),"outputs", "release-notes.md").toFile()
+        ghPublishTask.strategy.get() instanceof ReleaseNotesStrategy
     }
 
     def createSrcFile(String folderStr, String filename) {

@@ -219,7 +219,7 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
 
     @Unroll
     def "task :#taskToRun generates #output_type reports"() {
-        given: "some dummy test"
+        given: "some dummy test "
         fork = true
 
         writeTest('src/integrationTest/java/', "wooga.integration", false)
