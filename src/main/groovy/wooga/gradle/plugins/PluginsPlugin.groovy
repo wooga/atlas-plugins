@@ -18,6 +18,7 @@ package wooga.gradle.plugins
 
 import com.gradle.publish.PluginBundleExtension
 import com.gradle.publish.PublishPlugin
+import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.gradle.GrgitPlugin
 import org.gradle.api.Action
 import org.gradle.api.Plugin
@@ -241,12 +242,13 @@ class PluginsPlugin implements Plugin<Project> {
         def tasks = project.tasks
         def releaseNotesTask = tasks.getByName(RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes
         def publishTaskProvider = tasks.named(GithubPublishPlugin.PUBLISH_TASK_NAME)
+        Grgit git = project.extensions.grgit
         publishTaskProvider.configure {GithubPublish githubPublishTask ->
             githubPublishTask.onlyIf(new ProjectStatusTaskSpec("rc", "final"))
             githubPublishTask.with {
                 releaseName.set(project.version.toString())
                 tagName.set("v${project.version}")
-                targetCommitish.set(project.extensions.grgit.branch.current.name as String)
+                targetCommitish.set(git.head().id as String)
                 prerelease.set(project.properties['release.stage']!='final')
                 body.set(releaseNotesTask.output.map{it.asFile.text })
             }

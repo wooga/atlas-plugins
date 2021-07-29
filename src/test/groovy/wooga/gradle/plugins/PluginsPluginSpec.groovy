@@ -301,7 +301,7 @@ class PluginsPluginSpec extends ProjectSpec {
         then: "github publish task should be configured"
         ghPublishTask.releaseName.get() == project.version.toString()
         ghPublishTask.tagName.get() == "v${project.version}"
-        ghPublishTask.targetCommitish.get() == project.extensions.grgit.branch.current.name as String
+        ghPublishTask.targetCommitish.get() == project.extensions.grgit.head().id
         ghPublishTask.prerelease.get() == (project.properties['release.stage']!='final')
     }
 

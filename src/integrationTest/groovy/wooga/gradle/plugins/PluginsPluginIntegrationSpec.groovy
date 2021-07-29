@@ -195,7 +195,7 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
     //Ignore for now
     @IgnoreIf({ System.getProperty("os.name").toLowerCase().contains("windows") })
     @Unroll
-    def "task :#taskToRun saves jococo exec binaries to #expectedOutput"() {
+    def "task :#taskToRun saves jacoco exec binaries to #expectedOutput"() {
         given: "some dummy test"
         fork = true
         writeTest('src/integrationTest/java/', "wooga.integration", false)
