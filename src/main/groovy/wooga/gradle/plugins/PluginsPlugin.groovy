@@ -18,6 +18,7 @@ package wooga.gradle.plugins
 
 import com.gradle.publish.PluginBundleExtension
 import com.gradle.publish.PublishPlugin
+import org.ajoberstar.grgit.Commit
 import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.gradle.GrgitPlugin
 import org.gradle.api.Action
@@ -35,6 +36,7 @@ import org.gradle.api.reporting.ReportingExtension
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskContainer
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -43,6 +45,9 @@ import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.gradle.testing.jacoco.tasks.JacocoReportsContainer
+import org.kohsuke.github.GHBranch
+import org.kohsuke.github.GHRepository
+import org.kohsuke.github.GitHubBuilder
 import org.kt3k.gradle.plugin.CoverallsPlugin
 import org.sonarqube.gradle.SonarQubeExtension
 import wooga.gradle.github.GithubPlugin
@@ -127,9 +132,9 @@ class PluginsPlugin implements Plugin<Project> {
     }
 
     private static void configureReleaseNotes(Project project) {
-        Grgit git = project.extensions.grgit
         def releaseNotesProvider = project.tasks.register(RELEASE_NOTES_TASK_NAME, GenerateReleaseNotes)
         releaseNotesProvider.configure { task ->
+            Grgit git = project.extensions.grgit
             def versionExt = project.extensions.findByType(VersionPluginExtension)
             if (versionExt) {
                 task.from.set(versionExt.version.map { version ->
@@ -139,6 +144,16 @@ class PluginsPlugin implements Plugin<Project> {
                         return null
                     }
                 })
+
+                String repoName = task.repositoryName.getOrNull()
+                if(repoName == null) {
+                    repoName = project.properties["repoName"] as String
+                }
+                def remoteBranchName = findBranchNameForHEAD(git, repoName).orElseGet {
+                    project.logger.warn("Repository ${repoName} not found on github, using current branch name")
+                    return git.branch.current().name
+                }
+                task.branch.set(remoteBranchName)
                 task.to.set(git.head().id)
                 task.output.set(new File("${project.buildDir}/outputs/release-notes.md"))
                 task.strategy.set(new ReleaseNotesStrategy())
@@ -146,6 +161,39 @@ class PluginsPlugin implements Plugin<Project> {
         }
     }
 
+    private static String localBranchNameForHEAD(Grgit git) {
+        String remoteTracking = git.branch.current().trackingBranch?.name
+        if(remoteTracking != null) {
+            return remoteTracking
+        }
+    }
+
+    private static String remoteBranchNameForHEAD(GHRepository repo, Commit head) {
+        GHBranch branch = repo.getCommit(head.id).listBranchesWhereHead().find {
+            it.name != repo.defaultBranch
+        } as GHBranch
+
+        return branch?.name
+    }
+
+    private static Optional<String> findBranchNameForHEAD(Grgit git, String repoName) {
+        String localResult = localBranchNameForHEAD(git)
+        if(localResult == null && repoName != null) {
+            def maybeRepo = tryToGetRepository(repoName)
+            return maybeRepo.map{ repo -> remoteBranchNameForHEAD(repo, git.head()) }
+        }
+        return Optional.empty()
+    }
+
+    private static Optional<GHRepository> tryToGetRepository(String repoName) {
+        try {
+            def ghClient = GitHubBuilder.fromCredentials().build()
+            def repo = ghClient.getRepository(repoName)
+            return Optional.of(repo)
+        } catch (FileNotFoundException e) {
+            return Optional.empty()
+        }
+    }
 
     private static void configureVersionPluginExtension(Project project) {
         def versionExt = project.extensions.findByType(VersionPluginExtension)
@@ -241,7 +289,7 @@ class PluginsPlugin implements Plugin<Project> {
 
     private static void configureGithubPublishTask(Project project) {
         def tasks = project.tasks
-        def releaseNotesTask = tasks.getByName(RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes
+        def releaseNotesTask = tasks.named(RELEASE_NOTES_TASK_NAME) as TaskProvider<GenerateReleaseNotes>
         def publishTaskProvider = tasks.named(GithubPublishPlugin.PUBLISH_TASK_NAME)
         Grgit git = project.extensions.grgit
         publishTaskProvider.configure {GithubPublish githubPublishTask ->
@@ -251,7 +299,7 @@ class PluginsPlugin implements Plugin<Project> {
                 tagName.set("v${project.version}")
                 targetCommitish.set(git.head().id as String)
                 prerelease.set(project.properties['release.stage']!='final')
-                body.set(releaseNotesTask.output.map{it.asFile.text })
+                body.set(releaseNotesTask.get().output.map{it.asFile.text })
             }
         }
     }
@@ -357,4 +405,6 @@ class PluginsPlugin implements Plugin<Project> {
         sourceSet.resources.srcDir("src/" + sourceSet.getName() + "/resources");
         sourceSet
     }
+
+
 }

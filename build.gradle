@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+
 buildscript {
     repositories {
         mavenCentral()
@@ -30,6 +31,7 @@ buildscript {
     }
 }
 
+project.extensions.add("repoName", "wooga/atlas-plugins")
 apply plugin: new GroovyScriptEngine(
         [file('src/main/groovy').absolutePath,
          file('src/main/resources').absolutePath].toArray(new String[2]),
@@ -55,7 +57,7 @@ pluginBundle {
 }
 
 github {
-    repositoryName = "wooga/atlas-plugins"
+    repositoryName = project.extensions."repoName"
 }
 
 compileJava   {
