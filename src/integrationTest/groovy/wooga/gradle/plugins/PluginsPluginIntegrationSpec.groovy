@@ -122,26 +122,27 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
     }
 
     @Unroll
-    def "task :#lifecycleTask #skip in stage #releaseStage"() {
+    def "task #lifecycleTask #skip in stage #releaseStage"() {
         given: "some dummy test"
         writeTest('src/integrationTest/java/', "wooga.integration", false)
         writeTest('src/test/java/', "wooga.test", false)
 
         when:
-        def result = runTasks(lifecycleTask ,"-Prelease.stage=${releaseStage}")
+         def result = runTasks(lifecycleTask ,"-Prelease.stage=${releaseStage}")
 
         then:
-        if(skip=="skip") {
-            result.standardOutput.contains("${lifecycleTask} SKIPPED")
-        } else {
-            !result.wasSkipped(lifecycleTask)
-        }
+        skip=="skip"?
+                result.standardOutput.contains("${lifecycleTask} SKIPPED") :
+                !result.wasSkipped(lifecycleTask)
 
         where:
         lifecycleTask    | releaseStage | skip
         ":githubPublish" | "final"      | "don't skip"
         ":githubPublish" | "rc"         | "don't skip"
-        ":githubPublish" | "not-finalrc"| "skip"
+        ":githubPublish" | "snapshot"   | "skip"
+        ":releaseNotes"  | "final"      | "don't skip"
+        ":releaseNotes"  | "rc"         | "don't skip"
+        ":releaseNotes"  | "snapshot"   | "skip"
     }
 
     @Unroll
