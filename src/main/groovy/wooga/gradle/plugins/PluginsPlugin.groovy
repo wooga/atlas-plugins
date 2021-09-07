@@ -128,6 +128,7 @@ class PluginsPlugin implements Plugin<Project> {
     private static void configureReleaseNotes(Project project) {
         def releaseNotesProvider = project.tasks.register(RELEASE_NOTES_TASK_NAME, GenerateReleaseNotes)
         releaseNotesProvider.configure { task ->
+            task.onlyIf(new ProjectStatusTaskSpec("rc", "final"))
             def versionExt = project.extensions.findByType(VersionPluginExtension)
             if (versionExt) {
                 task.from.set(versionExt.version.map { version ->
@@ -244,8 +245,8 @@ class PluginsPlugin implements Plugin<Project> {
         publishTaskProvider.configure {GithubPublish githubPublishTask ->
             githubPublishTask.onlyIf(new ProjectStatusTaskSpec("rc", "final"))
             githubPublishTask.with {
-                releaseName.set(project.version.toString())
-                tagName.set("v${project.version}")
+                releaseName.set(project.provider {project.version.toString()})
+                tagName.set(project.provider {"v${project.version}"})
                 targetCommitish.set(project.extensions.grgit.branch.current.name as String)
                 prerelease.set(project.properties['release.stage']!='final')
                 body.set(releaseNotesTask.output.map{it.asFile.text })
