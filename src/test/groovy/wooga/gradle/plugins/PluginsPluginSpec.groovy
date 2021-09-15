@@ -201,10 +201,12 @@ class PluginsPluginSpec extends ProjectSpec {
     }
 
     def "configures sonarqube extension with default property values if none provided"(String ghCompany, String ghRepoName, String expectedProjectKey){
-        given: "configured github plugin"
-        if(!ghCompany.empty && !ghRepoName.empty) {
-            project.ext["github.repositoryName"] = "${ghCompany}/${ghRepoName}"
-        }
+        given: "configured github plugin with repository property"
+        project.ext["github.repositoryName"] = "${ghCompany}/${ghRepoName}"
+
+        and: "initialized git repository on branch"
+        def branchName = 'branchName'
+        initGitRepositoryWithBranch(branchName)
 
         and: "sample src and test folders"
         def srcFolder = createSrcFile("src/main/groovy/","Hello.groovy")
@@ -213,16 +215,19 @@ class PluginsPluginSpec extends ProjectSpec {
 
         and: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
+
+        when: "after project evaluate"
         project.evaluate()
 
-        expect:
-        SonarQubeTask sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME)
-        def properties = sonarTask.getProperties()
+        then:
+        SonarQubeTask sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME) as SonarQubeTask
+        def properties = sonarTask.properties
 
         //sonar.host.url is not here as CI always will have SONAR_HOST set, so it is never null there.
         properties["sonar.login"] == null
-        properties["sonar.projectKey"] == "${ghCompany}_${ghRepoName}"
+        properties["sonar.projectKey"] == expectedProjectKey
         properties["sonar.projectName"] == ghRepoName
+        properties["sonar.branch.name"] == branchName
         properties["sonar.sources"] == srcFolder.absolutePath
         properties["sonar.tests"].split(",").length == 2
         properties["sonar.tests"].split(",").contains(testFolder.absolutePath)
@@ -232,7 +237,6 @@ class PluginsPluginSpec extends ProjectSpec {
         where:
         ghCompany | ghRepoName | expectedProjectKey
         "company" | "repoName" | "company_repoName"
-        ""        | ""         | ""
     }
 
     @Unroll("configures sonarqube extension with project property #propertyName if provided")
@@ -252,6 +256,7 @@ class PluginsPluginSpec extends ProjectSpec {
         propertyName                | value
         "sonar.projectName"         | "project-name"
         "sonar.projectKey"          | "sonar_Project-name"
+        "sonar.branch.name"         | "branchname"
         "sonar.host.url"            | "https://sonar.host.tld"
         "sonar.login"               | "<<login_token>>"
         "sonar.sources"             | "source/folder"
@@ -291,7 +296,14 @@ class PluginsPluginSpec extends ProjectSpec {
     }
 
     def "configures github publish task"() {
-        given: "project with plugins plugin applied"
+        given: "configured github plugin with branch name property"
+        project.ext["github.repositoryName"] = "company/RepoName"
+
+        and:
+        def branchName = "branchName"
+        initGitRepositoryWithBranch(branchName)
+
+        and: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
         project.evaluate()
 
@@ -301,7 +313,6 @@ class PluginsPluginSpec extends ProjectSpec {
         then: "github publish task should be configured"
         ghPublishTask.releaseName.get() == project.version.toString()
         ghPublishTask.tagName.get() == "v${project.version}"
-        ghPublishTask.targetCommitish.get() == project.extensions.grgit.branch.current.name as String
         ghPublishTask.prerelease.get() == (project.properties['release.stage']!='final')
     }
 
@@ -336,5 +347,11 @@ class PluginsPluginSpec extends ProjectSpec {
                     ]
             )
         }
+    }
+
+    def initGitRepositoryWithBranch(String branchName) {
+        Grgit git = Grgit.init(dir: projectDir)
+        git.commit(message: "any")
+        git.checkout(branch: branchName, createBranch: true)
     }
 }

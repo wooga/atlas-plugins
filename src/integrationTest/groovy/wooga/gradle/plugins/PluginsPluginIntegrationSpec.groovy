@@ -44,6 +44,7 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         repo.commit('initial commit')
         repo.createRelease("0.0.1", "v0.0.1")
     }
+
     def setup() {
         def remote = "origin"
         git = Grgit.init(dir: projectDir)
@@ -243,7 +244,6 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         taskToRun          | output_type | expectedOutput
         "jacocoTestReport" | "xml"       | "build/reports/jacoco/test/jacocoTestReport.xml"
         "jacocoTestReport" | "html"      | "build/reports/jacoco/test/html"
-
     }
 
     @Rule
@@ -357,6 +357,57 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         where:
         taskToRun           | _
         "publishGroovydocs" | _
+    }
+
+    def "sonarqube task points to actual PR branch when branch name starts with PR-"() {
+        given: "a CI environment"
+        environmentVariables.set("CI", "true")
+
+        and: "a pull request open for this repository"
+        def actualPRBranch = "realbranch"
+        repo.createBranch(actualPRBranch)
+        repo.commit("commitmsg", actualPRBranch)
+        def pr = repo.createPullRequest("Test", actualPRBranch, repo.defaultBranch.name, "description")
+
+        and:"local git repository in a PR branch with same number as created PR"
+        def git = Grgit.init(dir: projectDir)
+        git.commit(message:"any")
+        git.checkout(branch:"PR-${pr.number}", createBranch: true)
+        when: "running sonarqube task"
+        def results = runTasks("sonarqube")
+
+        then: "targeted branch should be the actual PR branch"
+        results.standardOutput.contains("Using ${actualPRBranch} as sonarqube branch")
+    }
+
+    def "sonarqube task points to local branch when there is no PR associated"() {
+        given: "a CI environment"
+        environmentVariables.set("CI", "true")
+        and: "no pull request associated to this branch"
+
+        and:"local git repository"
+        def git = Grgit.init(dir: projectDir)
+
+        when: "running sonarqube task"
+        def results = runTasks("sonarqube")
+
+        then: "targeted branch should be the local tracking branch name"
+        results.standardOutput.contains("Using ${git.branch.current().trackingBranch.name} as sonarqube branch")
+    }
+
+
+    def "sonarqube task points to property branch when property is given"() {
+        given: "a CI environment"
+        environmentVariables.set("CI", "true")
+        and: "no pull request associated to this branch"
+        and: "a branch name"
+        def branchName = "branchName"
+
+        when: "running sonarqube task with github.branch.name property"
+        def results = runTasks("sonarqube", "-Pgithub.branch.name=${branchName}")
+
+        then: "targeted branch should be the actual PR branch"
+        results.standardOutput.contains("Using ${branchName} as sonarqube branch")
     }
 
     void writePluginMetaFile(String pluginID, String pluginClassname, File baseDir = getProjectDir()) {
