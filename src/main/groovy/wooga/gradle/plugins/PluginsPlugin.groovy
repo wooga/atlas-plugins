@@ -23,6 +23,8 @@ import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.ResolutionStrategy
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPlugin
@@ -123,6 +125,17 @@ class PluginsPlugin implements Plugin<Project> {
                 }
             }
         }
+
+        project.configurations.all({ Configuration configuration ->
+            configuration.resolutionStrategy({ ResolutionStrategy strategy ->
+                def localGroovy = GroovySystem.getVersion()
+                strategy.force("org.codehaus.groovy:groovy-all:${localGroovy}")
+                strategy.force("org.codehaus.groovy:groovy-macro:${localGroovy}")
+                strategy.force("org.codehaus.groovy:groovy-nio:${localGroovy}")
+                strategy.force("org.codehaus.groovy:groovy-sql:${localGroovy}")
+                strategy.force("org.codehaus.groovy:groovy-xml:${localGroovy}")
+            })
+        })
     }
 
     private static void configureReleaseNotes(Project project) {
