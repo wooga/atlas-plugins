@@ -39,6 +39,7 @@ import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import org.gradle.plugin.devel.plugins.JavaGradlePluginPlugin
 import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
@@ -71,7 +72,6 @@ import java.util.concurrent.Callable
  * - com.netflix.nebula:nebula-test
  * - org.spockframework:spock-core
  * - org.kt3k.gradle.plugin:coveralls-gradle-plugin
- * - com.netflix.nebula:nebula-release-plugin
  * - commons-io:commons-io
  * - com.gradle.publish:plugin-publish-plugin
  *
@@ -94,6 +94,7 @@ class PluginsPlugin implements Plugin<Project> {
             apply(IdeaPlugin)
             apply(JacocoPlugin)
             apply(MavenPublishPlugin)
+            apply(JavaGradlePluginPlugin)
             apply(PublishPlugin)
             apply(CoverallsPlugin)
             apply(VersionPlugin)
