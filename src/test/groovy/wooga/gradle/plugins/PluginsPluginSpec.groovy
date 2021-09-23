@@ -30,6 +30,7 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.testing.Test
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import org.gradle.plugin.devel.plugins.JavaGradlePluginPlugin
 import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
@@ -77,6 +78,7 @@ class PluginsPluginSpec extends ProjectSpec {
         "idea"                  | IdeaPlugin
         "maven-publish"         | MavenPublishPlugin
         "plugin-publish"        | PublishPlugin
+        "java-gradle-plugin"    | JavaGradlePluginPlugin
         "jacoco"                | JacocoPlugin
         "coveralls"             | CoverallsPlugin
         "version"               | VersionPlugin

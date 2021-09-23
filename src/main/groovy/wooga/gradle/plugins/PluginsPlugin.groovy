@@ -39,6 +39,8 @@ import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import org.gradle.plugin.devel.GradlePluginDevelopmentExtension
+import org.gradle.plugin.devel.plugins.JavaGradlePluginPlugin
 import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
@@ -71,7 +73,6 @@ import java.util.concurrent.Callable
  * - com.netflix.nebula:nebula-test
  * - org.spockframework:spock-core
  * - org.kt3k.gradle.plugin:coveralls-gradle-plugin
- * - com.netflix.nebula:nebula-release-plugin
  * - commons-io:commons-io
  * - com.gradle.publish:plugin-publish-plugin
  *
@@ -94,6 +95,7 @@ class PluginsPlugin implements Plugin<Project> {
             apply(IdeaPlugin)
             apply(JacocoPlugin)
             apply(MavenPublishPlugin)
+            apply(JavaGradlePluginPlugin)
             apply(PublishPlugin)
             apply(CoverallsPlugin)
             apply(VersionPlugin)
@@ -145,7 +147,7 @@ class PluginsPlugin implements Plugin<Project> {
             def versionExt = project.extensions.findByType(VersionPluginExtension)
             if (versionExt) {
                 task.from.set(versionExt.version.map { version ->
-                    if(version.previousVersion) {
+                    if (version.previousVersion) {
                         return "v${version.previousVersion}"
                     } else {
                         return null
@@ -161,7 +163,7 @@ class PluginsPlugin implements Plugin<Project> {
 
     private static void configureVersionPluginExtension(Project project) {
         def versionExt = project.extensions.findByType(VersionPluginExtension)
-        if(versionExt) {
+        if (versionExt) {
             versionExt.versionScheme.set(VersionScheme.semver2)
             versionExt.versionCodeScheme.set(VersionCodeScheme.releaseCount)
         }
@@ -194,11 +196,11 @@ class PluginsPlugin implements Plugin<Project> {
             @Override
             void execute(Groovydoc task) {
                 if (task.name == GroovyPlugin.GROOVYDOC_TASK_NAME) {
-                    PluginBundleExtension extension = project.getExtensions().getByType(PluginBundleExtension)
+                    GradlePluginDevelopmentExtension extension = project.getExtensions().getByType(GradlePluginDevelopmentExtension)
 
                     Callable<String> docTitle = {
                         if (extension.plugins[0]) {
-                            return "${extension.plugins[0].displayName} API".toString()
+                            return "${extension.plugins.first().displayName} API".toString()
                         }
                         null
                     }
@@ -255,14 +257,14 @@ class PluginsPlugin implements Plugin<Project> {
         def tasks = project.tasks
         def releaseNotesTask = tasks.getByName(RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes
         def publishTaskProvider = tasks.named(GithubPublishPlugin.PUBLISH_TASK_NAME)
-        publishTaskProvider.configure {GithubPublish githubPublishTask ->
+        publishTaskProvider.configure { GithubPublish githubPublishTask ->
             githubPublishTask.onlyIf(new ProjectStatusTaskSpec("rc", "final"))
             githubPublishTask.with {
-                releaseName.set(project.provider {project.version.toString()})
-                tagName.set(project.provider {"v${project.version}"})
+                releaseName.set(project.provider { project.version.toString() })
+                tagName.set(project.provider { "v${project.version}" })
                 targetCommitish.set(project.extensions.grgit.branch.current.name as String)
-                prerelease.set(project.properties['release.stage']!='final')
-                body.set(releaseNotesTask.output.map{it.asFile.text })
+                prerelease.set(project.properties['release.stage'] != 'final')
+                body.set(releaseNotesTask.output.map { it.asFile.text })
             }
         }
     }
@@ -290,7 +292,7 @@ class PluginsPlugin implements Plugin<Project> {
     private static configureJacocoTestReport(final Project project, final Task integrationTestTask, Task testTask) {
         project.tasks.withType(JacocoReport) { JacocoReport jacocoReport ->
             if (jacocoReport.name == "jacoco" + JavaPlugin.TEST_TASK_NAME.capitalize() + "Report") {
-                jacocoReport.reports{ JacocoReportsContainer configurableReports ->
+                jacocoReport.reports { JacocoReportsContainer configurableReports ->
                     configurableReports.xml.enabled = true
                     configurableReports.html.enabled = true
                 }
