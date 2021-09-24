@@ -261,7 +261,7 @@ class PluginsPlugin implements Plugin<Project> {
                 releaseName.set(project.provider {project.version.toString()})
                 tagName.set(project.provider {"v${project.version}"})
                 prerelease.set(project.properties['release.stage']!='final')
-                body.set(releaseNotesTask.get().output.map{it.asFile.text })
+                body.set(releaseNotesTask.flatMap({it.output.map({it.asFile.text })}))
             }
         }
     }
