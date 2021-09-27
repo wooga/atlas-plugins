@@ -4,6 +4,7 @@ import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.sonarqube.gradle.SonarQubeExtension
 import org.sonarqube.gradle.SonarQubePlugin
@@ -14,9 +15,9 @@ class SonarQubeConfiguration {
     public static final String TASK_NAME = SonarQubeExtension.SONARQUBE_TASK_NAME
     public static final Class<Plugin> PLUGIN_CLASS = SonarQubePlugin.class
 
-    private PropertyFactory propertyFactory
+    private final PropertyFactory propertyFactory
 
-    static SonarQubeConfiguration withEnvVarPropertyFallback(Project project) {
+    static SonarQubeConfiguration withEnvVarFallback(Project project) {
         return new SonarQubeConfiguration(PropertyFactories.withEnvVarFallback(project))
     }
 
@@ -24,12 +25,15 @@ class SonarQubeConfiguration {
         this.propertyFactory = propertyFactory
     }
 
-    private static String defaultProjectName(RepositoryInfo repoInfo) {
-        return "${repoInfo.companyName}_${repoInfo.repositoryName}"
-    }
-
-    Action<? extends SonarQubeProperties> generateSonarProperties(RepositoryInfo repoInfo, JavaPluginConvention javaConvention) {
-        return {sonarProps ->
+    Action<? extends SonarQubeProperties> generateSonarProperties(Provider<String> repositoryName,
+                                                                  Provider<String> branchName,
+                                                                  JavaPluginConvention javaConvention) {
+        def companyNameProvider = repositoryName.map { String fullRepoName -> fullRepoName.split("/")[0] }
+        def repoNameProvider = repositoryName.map { String fullRepoName -> fullRepoName.split("/")[1] }
+        def keyProvider = companyNameProvider.map { comp ->
+            return repoNameProvider.map { repoName -> "${comp}_${repoName}" }.getOrNull()
+        }
+        return { sonarProps ->
             sonarProps.with {
                 property "sonar.login",
                         propertyFactory.create("sonar.login", "SONAR_LOGIN", null)
@@ -37,20 +41,21 @@ class SonarQubeConfiguration {
                         propertyFactory.create("sonar.host.url", "SONAR_HOST", null)
                 property "sonar.projectName",
                         propertyFactory.create("sonar.projectName", "SONAR_PROJECT_NAME",
-                                repoInfo.repositoryName)
+                                repoNameProvider.getOrNull())
+                property "sonar.branch.name", propertyFactory.create("sonar.branch.name", "SONAR_BRANCH_NAME",
+                        branchName.getOrNull())
                 property "sonar.projectKey",
-                        propertyFactory.create("sonar.projectKey", "SONAR_PROJECT_KEY",
-                                defaultProjectName(repoInfo))
+                        propertyFactory.create("sonar.projectKey", "SONAR_PROJECT_KEY", keyProvider.getOrNull())
                 //plugin default is sourceSets.main.allJava.srcDirs (with only existing dirs)
                 property "sonar.sources",
                         propertyFactory.create("sonar.sources", "SONAR_SOURCES",
-                                srcDirMatching(javaConvention){ !it.name.toLowerCase().contains("test") }.join(","))
+                                srcDirMatching(javaConvention) { !it.name.toLowerCase().contains("test") }.join(","))
                 property "sonar.tests",
                         propertyFactory.create("sonar.tests", "SONAR_TESTS",
                                 srcDirMatching(javaConvention) { it.name.toLowerCase().contains("test") }.join(","))
                 property "sonar.jacoco.reportPaths",
                         propertyFactory.create("sonar.jacoco.reportPaths", "SONAR_JACOCO_REPORT_PATHS",
-                     "build/jacoco/integrationTest.exec,build/jacoco/test.exec")
+                                "build/jacoco/integrationTest.exec,build/jacoco/test.exec")
             }
         }
     }
@@ -58,7 +63,7 @@ class SonarQubeConfiguration {
     private static List<String> srcDirMatching(JavaPluginConvention javaConvention, Closure closure) {
         return javaConvention.sourceSets.findAll(closure).
                 collect { SourceSet sourceSet ->
-                    sourceSet.allJava.sourceDirectories.findAll{it.exists()}.collect{it.absolutePath}
+                    sourceSet.allJava.sourceDirectories.findAll { it.exists() }.collect { it.absolutePath }
                 }.flatten() as List<String>
     }
 }
