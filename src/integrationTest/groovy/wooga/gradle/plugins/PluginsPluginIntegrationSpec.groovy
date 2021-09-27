@@ -410,6 +410,19 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         results.standardOutput.contains("Using ${branchName} as sonarqube branch")
     }
 
+    def "sonarqube doesn't set a branch when empty branch property is given"() {
+        given: "a CI environment"
+        environmentVariables.set("CI", "true")
+        and: "no pull request associated to this branch"
+        and: "no branch name"
+
+        when: "running sonarqube task with github.branch.name property"
+        def results = runTasks("sonarqube", "-Pgithub.branch.name=")
+
+        then: "should inform that no branch is being set"
+        results.standardOutput.contains("Not setting branch information on sonarqube")
+    }
+
     void writePluginMetaFile(String pluginID, String pluginClassname, File baseDir = getProjectDir()) {
         String path = "src/main/resources/META-INF/gradle-plugins/${pluginID}.properties"
         def javaFile = createFile(path, baseDir)

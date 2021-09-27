@@ -272,10 +272,15 @@ class PluginsPlugin implements Plugin<Project> {
         SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
         JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
 
-        def branchName = localBranchProviderWithPR(project, project.extensions.getByType(GithubPluginExtension)).map {
+        def branchName = localBranchProviderWithPR(project, project.extensions.getByType(GithubPluginExtension)).
+        map {it.trim().isEmpty()? null : it }.
+        map {
             project.logger.info("Using ${it} as sonarqube branch")
             return it
-        }
+        }.orElse(project.provider {
+            project.logger.info("Not setting branch information on sonarqube")
+            return null as String
+        })
         project.rootProject.tasks.named(SonarQubeConfiguration.TASK_NAME) {sonarTask ->
             sonarExt.properties(sonarConfig.generateSonarProperties(githubExt.repositoryName, branchName, javaConvention))
             sonarTask.onlyIf { System.getenv('CI') }
