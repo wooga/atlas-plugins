@@ -47,11 +47,10 @@ class PluginsPlugin implements Plugin<Project> {
             apply(PrivatePluginsPlugin)
             apply(PublishPlugin)
         }
-
         configureTaskRuntimeDependencies(project)
     }
 
-    private static configureTaskRuntimeDependencies(final Project project) {
+    private static void configureTaskRuntimeDependencies(final Project project) {
         TaskContainer tasks = project.tasks
 
         Task publishPluginsTask = tasks.getByName("publishPlugins") //from gradle PublishPlugin

@@ -73,19 +73,19 @@ class PluginsPluginSpec extends ProjectSpec {
         project.plugins.hasPlugin(pluginType)
 
         where:
-        pluginName              | pluginType
-        "groovy"                | GroovyPlugin
-        "idea"                  | IdeaPlugin
-        "maven-publish"         | MavenPublishPlugin
-        "plugin-publish"        | PublishPlugin
-        "java-gradle-plugin"    | JavaGradlePluginPlugin
-        "jacoco"                | JacocoPlugin
-        "coveralls"             | CoverallsPlugin
-        "version"               | VersionPlugin
-        "grgit"                 | GrgitPlugin
-        "net.wooga.github"      | GithubPlugin
-        "github-release-notes"  | GithubReleaseNotesPlugin
-        "sonarqube"             | SonarQubePlugin
+        pluginName             | pluginType
+        "groovy"               | GroovyPlugin
+        "idea"                 | IdeaPlugin
+        "maven-publish"        | MavenPublishPlugin
+        "plugin-publish"       | PublishPlugin
+        "java-gradle-plugin"   | JavaGradlePluginPlugin
+        "jacoco"               | JacocoPlugin
+        "coveralls"            | CoverallsPlugin
+        "version"              | VersionPlugin
+        "grgit"                | GrgitPlugin
+        "net.wooga.github"     | GithubPlugin
+        "github-release-notes" | GithubReleaseNotesPlugin
+        "sonarqube"            | SonarQubePlugin
     }
 
     @Unroll("creates the task #taskName")
@@ -102,14 +102,14 @@ class PluginsPluginSpec extends ProjectSpec {
         taskType.isInstance(task)
 
         where:
-        taskName                                    | taskType
-        PluginsPlugin.INTEGRATION_TEST_TASK_NAME    | Test
-        PluginsPlugin.PUBLISH_GROOVY_DOCS_TASK_NAME | Sync
-        PluginsPlugin.RELEASE_NOTES_TASK_NAME       | GenerateReleaseNotes
-        LifecycleBasePlugin.CHECK_TASK_NAME         | Task
-        LifecycleBasePlugin.ASSEMBLE_TASK_NAME      | Task
-        PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME| Task
-        GithubPublishPlugin.PUBLISH_TASK_NAME       | GithubPublish
+        taskName                                         | taskType
+        LocalPluginsPlugin.INTEGRATION_TEST_TASK_NAME    | Test
+        LocalPluginsPlugin.PUBLISH_GROOVY_DOCS_TASK_NAME | Sync
+        PrivatePluginsPlugin.RELEASE_NOTES_TASK_NAME     | GenerateReleaseNotes
+        LifecycleBasePlugin.CHECK_TASK_NAME              | Task
+        LifecycleBasePlugin.ASSEMBLE_TASK_NAME           | Task
+        PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME     | Task
+        GithubPublishPlugin.PUBLISH_TASK_NAME            | GithubPublish
     }
 
     @Unroll("task #taskName has runtime dependencies")
@@ -123,15 +123,15 @@ class PluginsPluginSpec extends ProjectSpec {
 
         then:
         Task task = project.tasks.findByName(taskName)
-        task.getTaskDependencies().getDependencies(task).findAll {t ->
+        task.getTaskDependencies().getDependencies(task).findAll { t ->
             dependencies.find {
                 depName -> t.name == depName
             }
         }
 
         where:
-        taskName                                | dependencies
-        GithubPublishPlugin.PUBLISH_TASK_NAME   | [PluginsPlugin.RELEASE_NOTES_TASK_NAME]
+        taskName                              | dependencies
+        GithubPublishPlugin.PUBLISH_TASK_NAME | [PrivatePluginsPlugin.RELEASE_NOTES_TASK_NAME]
     }
 
     def "configures integration test task"() {
@@ -139,7 +139,7 @@ class PluginsPluginSpec extends ProjectSpec {
         project.plugins.apply(PLUGIN_NAME)
 
         and: "the integration test task"
-        Test integrationTestTask = project.tasks.getByName(PluginsPlugin.INTEGRATION_TEST_TASK_NAME) as Test
+        Test integrationTestTask = project.tasks.getByName(LocalPluginsPlugin.INTEGRATION_TEST_TASK_NAME) as Test
 
         and: "the integration test sourceset"
         JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
@@ -202,14 +202,14 @@ class PluginsPluginSpec extends ProjectSpec {
         ideaModel.module.scopes["TEST"]["plus"].contains(integrationTestCompileConfiguration)
     }
 
-    def "configures sonarqube extension with default property values if none provided"(String ghCompany, String ghRepoName, String expectedProjectKey){
+    def "configures sonarqube extension with default property values if none provided"(String ghCompany, String ghRepoName, String expectedProjectKey) {
         given: "configured github plugin"
-        if(!ghCompany.empty && !ghRepoName.empty) {
+        if (!ghCompany.empty && !ghRepoName.empty) {
             project.ext["github.repositoryName"] = "${ghCompany}/${ghRepoName}"
         }
 
         and: "sample src and test folders"
-        def srcFolder = createSrcFile("src/main/groovy/","Hello.groovy")
+        def srcFolder = createSrcFile("src/main/groovy/", "Hello.groovy")
         def testFolder = createSrcFile("src/test/groovy/", "HelloTest.groovy")
         def intTestFolder = createSrcFile("src/integrationTest/groovy/", "HelloIntegration.groovy")
 
@@ -251,14 +251,14 @@ class PluginsPluginSpec extends ProjectSpec {
         sonarTask.properties[propertyName] == project.property(propertyName)
 
         where:
-        propertyName                | value
-        "sonar.projectName"         | "project-name"
-        "sonar.projectKey"          | "sonar_Project-name"
-        "sonar.host.url"            | "https://sonar.host.tld"
-        "sonar.login"               | "<<login_token>>"
-        "sonar.sources"             | "source/folder"
-        "sonar.tests"               | "test/folder"
-        "sonar.jacoco.reportPaths"  | "jacoco/report.exec"
+        propertyName               | value
+        "sonar.projectName"        | "project-name"
+        "sonar.projectKey"         | "sonar_Project-name"
+        "sonar.host.url"           | "https://sonar.host.tld"
+        "sonar.login"              | "<<login_token>>"
+        "sonar.sources"            | "source/folder"
+        "sonar.tests"              | "test/folder"
+        "sonar.jacoco.reportPaths" | "jacoco/report.exec"
     }
 
     def "configure version extension with default values"() {
@@ -304,19 +304,7 @@ class PluginsPluginSpec extends ProjectSpec {
         ghPublishTask.releaseName.get() == project.version.toString()
         ghPublishTask.tagName.get() == "v${project.version}"
         ghPublishTask.targetCommitish.get() == project.extensions.grgit.branch.current.name as String
-        ghPublishTask.prerelease.get() == (project.properties['release.stage']!='final')
-    }
-
-    def createSrcFile(String folderStr, String filename) {
-        File folder = new File(projectDir, folderStr)
-        folder.mkdirs()
-        File srcFile = new File(folder, filename)
-        srcFile.createNewFile()
-        srcFile << """\
-            class ${filename.split("\\.")[0]} {
-            }
-            """.stripIndent()
-        return folder
+        ghPublishTask.prerelease.get() == (project.properties['release.stage'] != 'final')
     }
 
     def "will force groovy modules to local groovy version"() {
@@ -328,15 +316,26 @@ class PluginsPluginSpec extends ProjectSpec {
         project.configurations.every {
             //we turn the list of force modules to string to not test against gradle internals
             def forcedModules = it.resolutionStrategy.forcedModules.toList().collect { it.toString() }
-            forcedModules.containsAll(
-                    [
-                            "org.codehaus.groovy:groovy-all:${localGroovy}".toString(),
-                            "org.codehaus.groovy:groovy-macro:${localGroovy}".toString(),
-                            "org.codehaus.groovy:groovy-nio:${localGroovy}".toString(),
-                            "org.codehaus.groovy:groovy-sql:${localGroovy}".toString(),
-                            "org.codehaus.groovy:groovy-xml:${localGroovy}".toString()
+            forcedModules.containsAll([
+                        "org.codehaus.groovy:groovy-all:${localGroovy}".toString(),
+                        "org.codehaus.groovy:groovy-macro:${localGroovy}".toString(),
+                        "org.codehaus.groovy:groovy-nio:${localGroovy}".toString(),
+                        "org.codehaus.groovy:groovy-sql:${localGroovy}".toString(),
+                        "org.codehaus.groovy:groovy-xml:${localGroovy}".toString()
                     ]
             )
         }
+    }
+
+    File createSrcFile(String folderStr, String filename) {
+        File folder = new File(projectDir, folderStr)
+        folder.mkdirs()
+        File srcFile = new File(folder, filename)
+        srcFile.createNewFile()
+        srcFile << """\
+            class ${filename.split("\\.")[0]} {
+            }
+            """.stripIndent()
+        return folder
     }
 }

@@ -33,8 +33,6 @@ class PrivatePluginsPlugin implements Plugin<Project> {
             apply(GrgitPlugin)
             apply(GithubReleaseNotesPlugin)
         }
-
-
         configureVersionPluginExtension(project)
         configureReleaseNotes(project)
         configureGithubPublishTask(project)

@@ -1,6 +1,6 @@
 package wooga.gradle.plugins
 
-import org.gradle.api.Action
+
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -29,8 +29,6 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.gradle.testing.jacoco.tasks.JacocoReportsContainer
 import org.kt3k.gradle.plugin.CoverallsPlugin
 import org.sonarqube.gradle.SonarQubeExtension
-import wooga.gradle.github.base.GithubPluginExtension
-import wooga.gradle.plugins.sonarqube.RepositoryInfo
 import wooga.gradle.plugins.sonarqube.SonarQubeConfiguration
 
 import java.util.concurrent.Callable
@@ -38,6 +36,8 @@ import java.util.concurrent.Callable
 class LocalPluginsPlugin implements Plugin<Project> {
 
     static final String INTEGRATION_TEST_TASK_NAME = "integrationTest"
+    static final String COVERALLS_TASK_NAME = "coveralls"
+    static final String JACOCO_TASK_NAME = "jacoco"
     private static final String INTEGRATION_TEST_SOURCE = "src/integrationTest/groovy"
     static final String DOC_EXPORT_DIR = "docs/api"
     static final String PUBLISH_GROOVY_DOCS_TASK_NAME = "publishGroovydocs"
@@ -53,17 +53,18 @@ class LocalPluginsPlugin implements Plugin<Project> {
             apply(SonarQubeConfiguration.PLUGIN_CLASS)
         }
 
-        Task integrationTestTask = setupIntegrationTestTask(project, project.tasks)
+        def integrationTestTask = setupIntegrationTestTask(project, project.tasks)
         Task testTask = project.tasks.getByName(JavaPlugin.TEST_TASK_NAME)
 
-        configureGradleDocsTask(project)
+        configureGroovyDocsTask(project)
+        configureJacocoTestReport(project, integrationTestTask, testTask)
         configureSonarQubeExtension(project, SonarQubeConfiguration.withEnvVarPropertyFallback(project))
         configureTestReportOutput(project)
-        configureJacocoTestReport(project, integrationTestTask, testTask)
         configureCoverallsTask(project)
 
         setupRepositories(project)
         setupDependencies(project)
+        forceGroovyVersion(project, GroovySystem.getVersion())
 
         project.publishing {
             publications {
@@ -72,54 +73,12 @@ class LocalPluginsPlugin implements Plugin<Project> {
                 }
             }
         }
-
-        project.configurations.all({ Configuration configuration ->
-            configuration.resolutionStrategy({ ResolutionStrategy strategy ->
-                def localGroovy = GroovySystem.getVersion()
-                strategy.force("org.codehaus.groovy:groovy-all:${localGroovy}")
-                strategy.force("org.codehaus.groovy:groovy-macro:${localGroovy}")
-                strategy.force("org.codehaus.groovy:groovy-nio:${localGroovy}")
-                strategy.force("org.codehaus.groovy:groovy-sql:${localGroovy}")
-                strategy.force("org.codehaus.groovy:groovy-xml:${localGroovy}")
-            })
-        })
     }
 
-    private static def configureGradleDocsTask(final Project project) {
-        TaskContainer tasks = project.tasks
-        Groovydoc groovyDocTask = tasks.getByName(GroovyPlugin.GROOVYDOC_TASK_NAME) as Groovydoc
-        tasks.withType(Groovydoc, new Action<Groovydoc>() {
-            @Override
-            void execute(Groovydoc task) {
-                if (task.name == GroovyPlugin.GROOVYDOC_TASK_NAME) {
-                    GradlePluginDevelopmentExtension extension = project.getExtensions().getByType(GradlePluginDevelopmentExtension)
-
-                    Callable<String> docTitle = {
-                        if (extension.plugins[0]) {
-                            return "${extension.plugins.first.displayName} API".toString()
-                        }
-                        null
-                    }
-
-                    def conventionMapping = task.getConventionMapping()
-                    conventionMapping.use = { true }
-                    conventionMapping.footer = docTitle
-                    conventionMapping.windowTitle = docTitle
-                    conventionMapping.docTitle = docTitle
-                    conventionMapping.noVersionStamp = { true }
-                    conventionMapping.noTimestamp = { true }
-                }
-            }
-        })
-
-        Sync publishGroovydocTask = tasks.create(PUBLISH_GROOVY_DOCS_TASK_NAME, Sync)
-        publishGroovydocTask.description = "Publish groovy docs to output directory ${DOC_EXPORT_DIR}"
-        publishGroovydocTask.group = PublishingPlugin.PUBLISH_TASK_GROUP
-        publishGroovydocTask.from(groovyDocTask.outputs.files)
-        publishGroovydocTask.destinationDir = project.file(DOC_EXPORT_DIR)
-
-        def publishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
-        publishTask.dependsOn(publishGroovydocTask)
+    private static void setupRepositories(Project project) {
+        def repositories = project.repositories
+        repositories.add(repositories.mavenCentral())
+        repositories.add(repositories.gradlePluginPortal())
     }
 
     private static void setupDependencies(Project project) {
@@ -136,30 +95,53 @@ class LocalPluginsPlugin implements Plugin<Project> {
         dependencies.add("integrationTestImplementation", javaConvention.sourceSets.getByName("test").output)
     }
 
-    private static void setupRepositories(Project project) {
-        def repositories = project.repositories
-        repositories.add(repositories.mavenCentral())
-        repositories.add(repositories.gradlePluginPortal())
-    }
+    private static void configureGroovyDocsTask(final Project project) {
+        TaskContainer tasks = project.tasks
+        Groovydoc groovyDocTask = tasks.getByName(GroovyPlugin.GROOVYDOC_TASK_NAME) as Groovydoc
+        tasks.withType(Groovydoc, { Groovydoc task ->
+            if (task.name == GroovyPlugin.GROOVYDOC_TASK_NAME) {
+                GradlePluginDevelopmentExtension extension = project.getExtensions().getByType(GradlePluginDevelopmentExtension)
+                Callable<String> docTitle = {
+                    if (extension.plugins[0]) {
+                        return "${extension.plugins.first.displayName} API".toString()
+                    }
+                    return null
+                }
+                def conventionMapping = task.getConventionMapping()
+                conventionMapping.use = { true }
+                conventionMapping.footer = docTitle
+                conventionMapping.windowTitle = docTitle
+                conventionMapping.docTitle = docTitle
+                conventionMapping.noVersionStamp = { true }
+                conventionMapping.noTimestamp = { true }
+            }
+        })
 
+        Sync publishGroovydocTask = tasks.create(PUBLISH_GROOVY_DOCS_TASK_NAME, Sync)
+        publishGroovydocTask.description = "Publish groovy docs to output directory ${DOC_EXPORT_DIR}"
+        publishGroovydocTask.group = PublishingPlugin.PUBLISH_TASK_GROUP
+        publishGroovydocTask.from(groovyDocTask.outputs.files)
+        publishGroovydocTask.destinationDir = project.file(DOC_EXPORT_DIR)
+
+        def publishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
+        publishTask.dependsOn(publishGroovydocTask)
+    }
 
     private static configureSonarQubeExtension(final Project project, SonarQubeConfiguration sonarConfig) {
         project.afterEvaluate { //TODO check the need for the 'afterEvaluate' after nebula test plugin update
             SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
-            GithubPluginExtension githubExt = project.extensions.getByType(GithubPluginExtension)
 
-            RepositoryInfo ghExtensionRepoInfo = RepositoryInfo.fromGithubExtension(githubExt).orElse(RepositoryInfo.empty)
             JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
 
-            sonarExt.properties(sonarConfig.generateSonarProperties(ghExtensionRepoInfo, javaConvention))
+            sonarExt.properties(sonarConfig.generateSonarProperties(project.name, project.name, javaConvention))
 
             Task sonarTask = project.rootProject.tasks.getByName(SonarQubeConfiguration.TASK_NAME)
             sonarTask.onlyIf { System.getenv('CI') }
         }
     }
 
-    private static configureCoverallsTask(final Project project) {
-        def coverallsTask = project.tasks.getByName("coveralls")
+    private static void configureCoverallsTask(final Project project) {
+        def coverallsTask = project.tasks.getByName(COVERALLS_TASK_NAME)
         coverallsTask.onlyIf { System.getenv('CI') }
     }
 
@@ -176,14 +158,10 @@ class LocalPluginsPlugin implements Plugin<Project> {
     }
 
     private static void configureTestReportOutput(final Project project) {
-        ReportingExtension reporting = project.extensions.getByName(ReportingExtension.NAME) as ReportingExtension
-
-        project.tasks.withType(Test, new Action<Test>() {
-            @Override
-            void execute(Test task) {
-                task.reports.html.setDestination(project.file("${reporting.baseDir}/${task.name}"))
-            }
-        })
+        def reporting = project.extensions.getByName(ReportingExtension.NAME) as ReportingExtension
+        project.tasks.withType(Test) { task ->
+            task.reports.html.setDestination(project.file("${reporting.baseDir}/${task.name}"))
+        }
     }
 
     private static Test setupIntegrationTestTask(final Project project, final TaskContainer tasks) {
@@ -243,5 +221,17 @@ class LocalPluginsPlugin implements Plugin<Project> {
         sourceSet.groovy.srcDir("src/" + sourceSet.getName() + "/groovy");
         sourceSet.resources.srcDir("src/" + sourceSet.getName() + "/resources");
         sourceSet
+    }
+
+    private static void forceGroovyVersion(Project project, String version) {
+        project.configurations.all({ Configuration configuration ->
+            configuration.resolutionStrategy({ ResolutionStrategy strategy ->
+                strategy.force("org.codehaus.groovy:groovy-all:${version}")
+                strategy.force("org.codehaus.groovy:groovy-macro:${version}")
+                strategy.force("org.codehaus.groovy:groovy-nio:${version}")
+                strategy.force("org.codehaus.groovy:groovy-sql:${version}")
+                strategy.force("org.codehaus.groovy:groovy-xml:${version}")
+            })
+        })
     }
 }
