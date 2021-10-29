@@ -103,7 +103,7 @@ class LocalPluginsPlugin implements Plugin<Project> {
                 GradlePluginDevelopmentExtension extension = project.getExtensions().getByType(GradlePluginDevelopmentExtension)
                 Callable<String> docTitle = {
                     if (extension.plugins[0]) {
-                        return "${extension.plugins.first.displayName} API".toString()
+                        return "${extension.plugins.first().displayName} API".toString()
                     }
                     return null
                 }

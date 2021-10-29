@@ -41,6 +41,8 @@ import wooga.gradle.github.publish.GithubPublishPlugin
  */
 class PluginsPlugin implements Plugin<Project> {
 
+    static final String PUBLISH_PLUGIN_TASK_NAME = "publishPlugins"
+
     @Override
     void apply(Project project) {
         project.pluginManager.with {
@@ -53,7 +55,7 @@ class PluginsPlugin implements Plugin<Project> {
     private static void configureTaskRuntimeDependencies(final Project project) {
         TaskContainer tasks = project.tasks
 
-        Task publishPluginsTask = tasks.getByName("publishPlugins") //from gradle PublishPlugin
+        Task publishPluginsTask = tasks.getByName(PUBLISH_PLUGIN_TASK_NAME) //from gradle PublishPlugin
         Task checkTask = tasks.getByName(LifecycleBasePlugin.CHECK_TASK_NAME)
         Task publishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
         Task githubPublishTask = tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
