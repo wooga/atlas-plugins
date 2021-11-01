@@ -21,7 +21,7 @@ import wooga.gradle.version.VersionPlugin
 import wooga.gradle.version.VersionPluginExtension
 import wooga.gradle.version.VersionScheme
 
-class PrivatePluginsPluginSpec extends ProjectSpec {
+class PrivatePluginsPluginSpec extends LocalPluginsPluginSpec {
 
     public static final String PLUGIN_NAME = 'net.wooga.plugins-private'
 

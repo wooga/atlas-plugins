@@ -32,14 +32,6 @@ class LocalPluginsPluginSpec extends ProjectSpec {
 
     private static final String PLUGIN_NAME = "net.wooga.plugins-local"
 
-    Grgit git
-
-    def setup() {
-        git = Grgit.init(dir: projectDir)
-        git.commit(message: 'initial commit')
-        git.tag.add(name: "v0.0.1")
-    }
-
     @Unroll("applies plugin #pluginName")
     def 'Applies other plugins'(String pluginName, Class<? extends Plugin> pluginType) {
         given:
