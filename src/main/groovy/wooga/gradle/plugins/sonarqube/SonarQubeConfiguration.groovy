@@ -4,6 +4,7 @@ import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.sonarqube.gradle.SonarQubeExtension
 import org.sonarqube.gradle.SonarQubePlugin
@@ -24,11 +25,15 @@ class SonarQubeConfiguration {
         this.propertyFactory = propertyFactory
     }
 
-    private static String defaultProjectName(RepositoryInfo repoInfo) {
-        return "${repoInfo.companyName}_${repoInfo.repositoryName}"
+    Action<? extends SonarQubeProperties> generateSonarProperties(RepositoryInfo repoInfo,
+                                                                  JavaPluginConvention javaConvention) {
+        def projectKey = "${repoInfo.companyName}_${repoInfo.repositoryName}"
+        return generateSonarProperties(repoInfo.repositoryName, projectKey, javaConvention)
     }
 
-    Action<? extends SonarQubeProperties> generateSonarProperties(RepositoryInfo repoInfo, JavaPluginConvention javaConvention) {
+    Action<? extends SonarQubeProperties> generateSonarProperties(String projectName,
+                                                                  String projectKey,
+                                                                  JavaPluginConvention javaConvention) {
         return {sonarProps ->
             sonarProps.with {
                 property "sonar.login",
@@ -36,11 +41,9 @@ class SonarQubeConfiguration {
                 property "sonar.host.url",
                         propertyFactory.create("sonar.host.url", "SONAR_HOST", null)
                 property "sonar.projectName",
-                        propertyFactory.create("sonar.projectName", "SONAR_PROJECT_NAME",
-                                repoInfo.repositoryName)
+                        propertyFactory.create("sonar.projectName", "SONAR_PROJECT_NAME", projectName)
                 property "sonar.projectKey",
-                        propertyFactory.create("sonar.projectKey", "SONAR_PROJECT_KEY",
-                                defaultProjectName(repoInfo))
+                        propertyFactory.create("sonar.projectKey", "SONAR_PROJECT_KEY", projectKey)
                 //plugin default is sourceSets.main.allJava.srcDirs (with only existing dirs)
                 property "sonar.sources",
                         propertyFactory.create("sonar.sources", "SONAR_SOURCES",

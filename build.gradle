@@ -31,9 +31,7 @@ buildscript {
 }
 
 apply plugin: new GroovyScriptEngine(
-        [file('src/main/groovy').absolutePath,
-         file('src/main/resources').absolutePath].toArray(new String[2]),
-        this.class.classLoader
+        [file('src/main/groovy').absolutePath] as String[], this.class.classLoader
 ).loadScriptByName('wooga/gradle/plugins/PluginsPlugin.groovy')
 
 group 'net.wooga.gradle'
@@ -44,12 +42,29 @@ pluginBundle {
     website = 'https://wooga.github.io/atlas-plugins'
     vcsUrl = 'https://github.com/wooga/atlas-plugins'
     tags = ['plugins', 'publishing', 'internal']
+}
 
+gradlePlugin {
     plugins {
         plugins {
             id = 'net.wooga.plugins'
-            displayName = 'Wooga Base Gradle Plugin'
-            description = 'This plugin provides tasks and basic setup for other plugins'
+            displayName = 'wooga base gradle plugin'
+            description = 'this plugin provides tasks and basic setup for other plugins'
+            implementationClass = 'wooga.gradle.plugins.PluginsPlugin'
+        }
+
+        localPlugins {
+            id = 'net.wooga.plugins-local'
+            displayName = 'wooga base gradle plugin'
+            description = 'this plugin provides tasks and basic setup for other plugins'
+            implementationClass = 'wooga.gradle.plugins.LocalPluginsPlugin'
+        }
+
+        privatePlugins {
+            id = 'net.wooga.plugins-private'
+            displayName = 'wooga base gradle plugin for private plugins'
+            description = 'this plugin provides tasks and basic setup for private plugins'
+            implementationClass = 'wooga.gradle.plugins.PrivatePluginsPlugin'
         }
     }
 }
