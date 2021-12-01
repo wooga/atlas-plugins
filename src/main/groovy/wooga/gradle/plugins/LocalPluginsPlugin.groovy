@@ -1,6 +1,6 @@
 package wooga.gradle.plugins
 
-
+import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -10,6 +10,7 @@ import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
@@ -56,6 +57,7 @@ class LocalPluginsPlugin implements Plugin<Project> {
         def integrationTestTask = setupIntegrationTestTask(project, project.tasks)
         Task testTask = project.tasks.getByName(JavaPlugin.TEST_TASK_NAME)
 
+        configureSourceCompatibility(project)
         configureGroovyDocsTask(project)
         configureJacocoTestReport(project, integrationTestTask, testTask)
         configureSonarQubeExtension(project, SonarQubeConfiguration.withEnvVarPropertyFallback(project))
@@ -233,5 +235,10 @@ class LocalPluginsPlugin implements Plugin<Project> {
                 strategy.force("org.codehaus.groovy:groovy-xml:${version}")
             })
         })
+    }
+
+    static void configureSourceCompatibility(Project project) {
+        JavaPluginExtension javaExtension = project.extensions.getByType(JavaPluginExtension)
+        javaExtension.sourceCompatibility = JavaVersion.VERSION_1_8
     }
 }
