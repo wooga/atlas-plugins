@@ -18,6 +18,8 @@ import org.gradle.api.reporting.ReportingExtension
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskContainer
+import org.gradle.api.tasks.compile.GroovyCompile
+import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.language.base.plugins.LifecycleBasePlugin
