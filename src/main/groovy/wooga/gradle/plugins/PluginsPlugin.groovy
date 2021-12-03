@@ -19,13 +19,9 @@ package wooga.gradle.plugins
 import com.gradle.publish.PluginBundleExtension
 import com.gradle.publish.PublishPlugin
 import org.ajoberstar.grgit.gradle.GrgitPlugin
-import org.gradle.api.JavaVersion
-import org.gradle.api.Plugin
-import org.gradle.api.Project
-import org.gradle.api.Task
+import org.gradle.api.*
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolutionStrategy
-import org.gradle.api.UncheckedIOException
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPlugin
@@ -40,8 +36,6 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
-import org.gradle.api.tasks.compile.GroovyCompile
-import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.language.base.plugins.LifecycleBasePlugin
