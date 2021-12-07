@@ -24,7 +24,7 @@ buildscript {
         classpath 'com.gradle.publish:plugin-publish-plugin:0.14.0'
         classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:[2,3)'
         classpath 'gradle.plugin.net.wooga.gradle:atlas-GithubReleaseNotes:[0.1, 0.2)'
-        classpath 'org.ajoberstar.grgit:grgit-gradle:4.1.0'
+        classpath 'org.ajoberstar.grgit:grgit-gradle:4.1.1'
         classpath 'gradle.plugin.net.wooga.gradle:atlas-version:[1.0.1,2)'
         classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.0'
     }
