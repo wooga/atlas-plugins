@@ -19,16 +19,14 @@ package wooga.gradle.plugins
 import com.gradle.publish.PluginBundleExtension
 import com.gradle.publish.PublishPlugin
 import org.ajoberstar.grgit.gradle.GrgitPlugin
-import org.gradle.api.Plugin
-import org.gradle.api.Project
-import org.gradle.api.Task
+import org.gradle.api.*
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolutionStrategy
-import org.gradle.api.UncheckedIOException
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Provider
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
@@ -107,6 +105,7 @@ class PluginsPlugin implements Plugin<Project> {
 
         def integrationTestTask = setupIntegrationTestTask(project, project.tasks)
         def testTask = project.tasks.named(JavaPlugin.TEST_TASK_NAME)
+        configureSourceCompatibility(project)
         configureVersionPluginExtension(project)
         configureSonarQubeExtension(project, SonarQubeConfiguration.withEnvVarFallback(project))
         configureTestReportOutput(project)
@@ -406,5 +405,10 @@ class PluginsPlugin implements Plugin<Project> {
                 throw e
             }
         }
+    }
+
+    static void configureSourceCompatibility(Project project) {
+        JavaPluginExtension javaExtension = project.extensions.getByType(JavaPluginExtension)
+        javaExtension.sourceCompatibility = JavaVersion.VERSION_1_8
     }
 }
