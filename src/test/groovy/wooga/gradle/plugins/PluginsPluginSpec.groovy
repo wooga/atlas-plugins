@@ -234,7 +234,6 @@ class PluginsPluginSpec extends ProjectSpec {
         where:
         ghCompany | ghRepoName | expectedProjectKey
         "company" | "repoName" | "company_repoName"
-        ""        | ""         | ""
     }
 
     @Unroll("configures sonarqube extension with project property #propertyName if provided")

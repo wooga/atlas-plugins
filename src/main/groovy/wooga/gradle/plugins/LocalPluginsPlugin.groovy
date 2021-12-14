@@ -40,7 +40,6 @@ class LocalPluginsPlugin implements Plugin<Project> {
 
     static final String INTEGRATION_TEST_TASK_NAME = "integrationTest"
     static final String COVERALLS_TASK_NAME = "coveralls"
-    static final String JACOCO_TASK_NAME = "jacoco"
     private static final String INTEGRATION_TEST_SOURCE = "src/integrationTest/groovy"
     static final String DOC_EXPORT_DIR = "docs/api"
     static final String PUBLISH_GROOVY_DOCS_TASK_NAME = "publishGroovydocs"
@@ -132,16 +131,16 @@ class LocalPluginsPlugin implements Plugin<Project> {
     }
 
     private static configureSonarQubeExtension(final Project project, SonarQubeConfiguration sonarConfig) {
-        project.afterEvaluate { //TODO check the need for the 'afterEvaluate' after nebula test plugin update
-            SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
+        SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
 
-            JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
+        JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
 
-            sonarExt.properties(sonarConfig.generateSonarProperties(project.name, project.name, javaConvention))
+        sonarExt.properties(sonarConfig.generateSonarProperties(
+                project.provider{ project.name },
+                project.provider{ null as String }, javaConvention))
 
-            Task sonarTask = project.rootProject.tasks.getByName(SonarQubeConfiguration.TASK_NAME)
-            sonarTask.onlyIf { System.getenv('CI') }
-        }
+        Task sonarTask = project.rootProject.tasks.getByName(SonarQubeConfiguration.TASK_NAME)
+        sonarTask.onlyIf { System.getenv('CI') }
     }
 
     private static void configureCoverallsTask(final Project project) {

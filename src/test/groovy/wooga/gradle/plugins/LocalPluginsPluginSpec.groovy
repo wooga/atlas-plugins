@@ -236,6 +236,7 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         "sonar.projectName"        | "project-name"
         "sonar.projectKey"         | "sonar_Project-name"
         "sonar.host.url"           | "https://sonar.host.tld"
+        "sonar.branch.name"        | "branchName"
         "sonar.login"              | "<<login_token>>"
         "sonar.sources"            | "source/folder"
         "sonar.tests"              | "test/folder"
@@ -301,12 +302,12 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         dependency.version == version
 
         where:
-        scope                           | dependencyString                        | version
-        "implementation"                | "commons-io:commons-io"                 | "[2,3)"
-        "testImplementation"            | "junit:junit"                           | "[4,5)"
-        "testImplementation"            | "org.spockframework:spock-core"         | "1.3-groovy-2.5"
-        "testImplementation"            | "com.netflix.nebula:nebula-test"        | "[8,9)"
-        "testImplementation"            | "com.github.stefanbirkner:system-rules" | "[1,2)"
+        scope                | dependencyString                        | version
+        "implementation"     | "commons-io:commons-io"                 | "[2,3)"
+        "testImplementation" | "junit:junit"                           | "[4,5)"
+        "testImplementation" | "org.spockframework:spock-core"         | "1.3-groovy-2.5"
+        "testImplementation" | "com.netflix.nebula:nebula-test"        | "[8,9)"
+        "testImplementation" | "com.github.stefanbirkner:system-rules" | "[1,2)"
     }
 
     def "setups gradleAPI as API dependency"() {

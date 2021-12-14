@@ -1,6 +1,5 @@
 package wooga.gradle.plugins
 
-import nebula.test.ProjectSpec
 import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.gradle.GrgitPlugin
 import org.gradle.api.Task
@@ -147,16 +146,13 @@ class PrivatePluginsPluginSpec extends LocalPluginsPluginSpec {
         releaseNotesTask.strategy.get() instanceof ReleaseNotesStrategy
     }
 
-    def "configures sonarqube extension with default property values if none provided"() {
+    def "overrides sonarqube extension local property values with remote if none provided"() {
         given: "configured github plugin"
+        def ghCompany = "company"
+        def ghRepoName = "repoName"
         if (!ghCompany.empty && !ghRepoName.empty) {
             project.ext["github.repositoryName"] = "${ghCompany}/${ghRepoName}"
         }
-
-        and: "sample src and test folders"
-        def srcFolder = createSrcFile("src/main/groovy/", "Hello.groovy")
-        def testFolder = createSrcFile("src/test/groovy/", "HelloTest.groovy")
-        def intTestFolder = createSrcFile("src/integrationTest/groovy/", "HelloIntegration.groovy")
 
         and: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
@@ -166,20 +162,9 @@ class PrivatePluginsPluginSpec extends LocalPluginsPluginSpec {
         def sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME) as SonarQubeTask
         def properties = sonarTask.getProperties()
 
-        //sonar.host.url is not here as CI always will have SONAR_HOST set, so it is never null there.
-        properties["sonar.login"] == null
         properties["sonar.projectKey"] == "${ghCompany}_${ghRepoName}"
         properties["sonar.projectName"] == ghRepoName
-        properties["sonar.sources"] == srcFolder.absolutePath
-        properties["sonar.tests"].split(",").length == 2
-        properties["sonar.tests"].split(",").contains(testFolder.absolutePath)
-        properties["sonar.tests"].split(",").contains(intTestFolder.absolutePath)
-        properties["sonar.jacoco.reportPaths"] == "build/jacoco/integrationTest.exec,build/jacoco/test.exec"
-
-        where:
-        ghCompany | ghRepoName | expectedProjectKey
-        "company" | "repoName" | "company_repoName"
-        ""        | ""         | ""
+        properties["sonar.branch.name"] == "master"
     }
 
     def "configures github publish task"() {

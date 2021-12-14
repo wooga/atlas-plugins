@@ -18,7 +18,6 @@ import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
 import wooga.gradle.githubReleaseNotes.tasks.GenerateReleaseNotes
 import wooga.gradle.plugins.releasenotes.ReleaseNotesStrategy
-import wooga.gradle.plugins.sonarqube.RepositoryInfo
 import wooga.gradle.plugins.sonarqube.SonarQubeConfiguration
 import wooga.gradle.version.VersionCodeScheme
 import wooga.gradle.version.VersionPlugin
@@ -92,18 +91,15 @@ class PrivatePluginsPlugin implements Plugin<Project> {
         }
     }
 
-    private static void configureSonarQube(final Project project, SonarQubeConfiguration sonarConfig) {
-        project.afterEvaluate {
-            SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
-            GithubPluginExtension githubExt = project.extensions.getByType(GithubPluginExtension)
+    private static configureSonarQube(final Project project,
+                                      SonarQubeConfiguration sonarConfig) {
+        def githubExt = project.extensions.getByType(GithubPluginExtension)
+        SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
+        JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
 
-            RepositoryInfo ghExtensionRepoInfo = RepositoryInfo.fromGithubExtension(githubExt)
-                                                                .orElse(RepositoryInfo.empty)
-            JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
-
-            sonarExt.properties(sonarConfig.generateSonarProperties(ghExtensionRepoInfo, javaConvention))
-
-            Task sonarTask = project.rootProject.tasks.getByName(SonarQubeConfiguration.TASK_NAME)
+        sonarExt.properties(sonarConfig.generateSonarProperties(githubExt.repositoryName,
+                                                                githubExt.branchName, javaConvention))
+        project.rootProject.tasks.named(SonarQubeConfiguration.TASK_NAME) {sonarTask ->
             sonarTask.onlyIf { System.getenv('CI') }
         }
     }
