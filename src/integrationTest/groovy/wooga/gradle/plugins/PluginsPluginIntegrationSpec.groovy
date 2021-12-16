@@ -127,9 +127,15 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         writeTest('src/integrationTest/java/', "wooga.integration", false)
         writeTest('src/test/java/', "wooga.test", false)
 
+        and: "dummying tasks to be executed, as we only want to know if it would be skipped or not"
+        buildFile << """
+        project.gradle.taskGraph.whenReady {
+            gradle.taskGraph.allTasks.each {it.setActions([])}
+        }
+        """.stripIndent()
+
         when:
          def result = runTasks(lifecycleTask ,"-Prelease.stage=${releaseStage}")
-
         then:
         skip=="skip"?
                 result.standardOutput.contains("${lifecycleTask} SKIPPED") :
@@ -137,12 +143,12 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
 
         where:
         lifecycleTask    | releaseStage | skip
-        ":githubPublish" | "final"      | "don't skip"
-        ":githubPublish" | "rc"         | "don't skip"
-        ":githubPublish" | "snapshot"   | "skip"
-        ":releaseNotes"  | "final"      | "don't skip"
-        ":releaseNotes"  | "rc"         | "don't skip"
-        ":releaseNotes"  | "snapshot"   | "skip"
+        "githubPublish" | "final"      | "don't skip"
+        "githubPublish" | "rc"         | "don't skip"
+        "githubPublish" | "snapshot"   | "skip"
+        "releaseNotes"  | "final"      | "don't skip"
+        "releaseNotes"  | "rc"         | "don't skip"
+        "releaseNotes"  | "snapshot"   | "skip"
     }
 
     @Unroll
