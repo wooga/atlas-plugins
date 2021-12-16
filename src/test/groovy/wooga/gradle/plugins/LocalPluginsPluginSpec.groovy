@@ -192,7 +192,6 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         }
     }
 
-
     def "configures sonarqube extension with default property values if none provided"() {
         given: "sample src and test folders"
         def srcFolder = createSrcFile("src/main/groovy/", "Hello.groovy")
@@ -211,12 +210,15 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         properties["sonar.login"] == null
         properties["sonar.projectKey"] == project.name
         properties["sonar.projectName"] == project.name
+        properties["sonar.branch.name"] == null
         properties["sonar.sources"] == srcFolder.absolutePath
         properties["sonar.tests"].split(",").length == 2
         properties["sonar.tests"].split(",").contains(testFolder.absolutePath)
         properties["sonar.tests"].split(",").contains(intTestFolder.absolutePath)
         properties["sonar.jacoco.reportPaths"] == "build/jacoco/integrationTest.exec,build/jacoco/test.exec"
     }
+
+
 
     @Unroll("configures sonarqube extension with project property #propertyName if provided")
     def "configures sonarqube extension with project property values if provided"(String propertyName, String value) {

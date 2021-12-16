@@ -167,6 +167,28 @@ class PrivatePluginsPluginSpec extends LocalPluginsPluginSpec {
         properties["sonar.branch.name"] == "master"
     }
 
+    @Unroll
+    def "sets sonarqube branch name from github extension, except if branch is from PR"() {
+        given: "set git branch name"
+        project.ext["github.branch.name"] = branchName
+
+        and: "project with plugins plugin applied"
+        project.plugins.apply(PLUGIN_NAME)
+
+        expect:
+        def sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME) as SonarQubeTask
+        def properties = sonarTask.getProperties()
+
+        properties["sonar.branch.name"] == expected
+
+        where:
+        branchName | expected
+        "PR-123"   | null
+        "PR-abc"   | "PR-abc"
+        "branch"   | "branch"
+        ""         | null
+    }
+
     def "configures github publish task"() {
         given: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)

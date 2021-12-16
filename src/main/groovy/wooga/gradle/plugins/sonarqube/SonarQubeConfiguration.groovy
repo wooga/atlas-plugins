@@ -29,6 +29,7 @@ class SonarQubeConfiguration {
             Provider<String> repositoryName,
             Provider<String> branchName,
             JavaPluginConvention javaConvention) {
+
         def repoNameProvider = repositoryName.map { String fullRepoName ->
             fullRepoName.contains("/")? fullRepoName.split("/")[1] : fullRepoName
         }
@@ -39,6 +40,9 @@ class SonarQubeConfiguration {
             }
             return repoName
         }
+        branchName = branchName.map{it -> it.empty? null : it}
+        //sonar.branch.name cant be present on PRs
+        def nonPRBranchName = branchName.map{it -> it.empty? null : it}.map{isPR(it)? null : it}
         return { sonarProps ->
             sonarProps.with {
                 property "sonar.login",
@@ -49,7 +53,7 @@ class SonarQubeConfiguration {
                         propertyFactory.create("sonar.projectName", "SONAR_PROJECT_NAME",
                                 repoNameProvider.getOrNull())
                 property "sonar.branch.name", propertyFactory.create("sonar.branch.name", "SONAR_BRANCH_NAME",
-                        branchName.getOrNull())
+                                nonPRBranchName.getOrNull())
                 property "sonar.projectKey",
                         propertyFactory.create("sonar.projectKey", "SONAR_PROJECT_KEY", keyProvider.getOrNull())
                 //plugin default is sourceSets.main.allJava.srcDirs (with only existing dirs)
@@ -71,5 +75,10 @@ class SonarQubeConfiguration {
                 collect { SourceSet sourceSet ->
                     sourceSet.allJava.sourceDirectories.findAll { it.exists() }.collect { it.absolutePath }
                 }.flatten() as List<String>
+    }
+
+    static boolean isPR(String currentBranch) {
+        def maybePrNumber = currentBranch.replace("PR-", "").trim()
+        return currentBranch.toUpperCase().startsWith("PR-") && maybePrNumber.isNumber()
     }
 }
