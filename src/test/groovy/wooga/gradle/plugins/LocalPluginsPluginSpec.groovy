@@ -192,7 +192,6 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         }
     }
 
-
     def "configures sonarqube extension with default property values if none provided"() {
         given: "sample src and test folders"
         def srcFolder = createSrcFile("src/main/groovy/", "Hello.groovy")
@@ -211,12 +210,15 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         properties["sonar.login"] == null
         properties["sonar.projectKey"] == project.name
         properties["sonar.projectName"] == project.name
+        properties["sonar.branch.name"] == null
         properties["sonar.sources"] == srcFolder.absolutePath
         properties["sonar.tests"].split(",").length == 2
         properties["sonar.tests"].split(",").contains(testFolder.absolutePath)
         properties["sonar.tests"].split(",").contains(intTestFolder.absolutePath)
         properties["sonar.jacoco.reportPaths"] == "build/jacoco/integrationTest.exec,build/jacoco/test.exec"
     }
+
+
 
     @Unroll("configures sonarqube extension with project property #propertyName if provided")
     def "configures sonarqube extension with project property values if provided"(String propertyName, String value) {
@@ -236,6 +238,7 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         "sonar.projectName"        | "project-name"
         "sonar.projectKey"         | "sonar_Project-name"
         "sonar.host.url"           | "https://sonar.host.tld"
+        "sonar.branch.name"        | "branchName"
         "sonar.login"              | "<<login_token>>"
         "sonar.sources"            | "source/folder"
         "sonar.tests"              | "test/folder"
@@ -301,12 +304,12 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         dependency.version == version
 
         where:
-        scope                           | dependencyString                        | version
-        "implementation"                | "commons-io:commons-io"                 | "[2,3)"
-        "testImplementation"            | "junit:junit"                           | "[4,5)"
-        "testImplementation"            | "org.spockframework:spock-core"         | "1.3-groovy-2.5"
-        "testImplementation"            | "com.netflix.nebula:nebula-test"        | "[8,9)"
-        "testImplementation"            | "com.github.stefanbirkner:system-rules" | "[1,2)"
+        scope                | dependencyString                        | version
+        "implementation"     | "commons-io:commons-io"                 | "[2,3)"
+        "testImplementation" | "junit:junit"                           | "[4,5)"
+        "testImplementation" | "org.spockframework:spock-core"         | "1.3-groovy-2.5"
+        "testImplementation" | "com.netflix.nebula:nebula-test"        | "[8,9)"
+        "testImplementation" | "com.github.stefanbirkner:system-rules" | "[1,2)"
     }
 
     def "setups gradleAPI as API dependency"() {
