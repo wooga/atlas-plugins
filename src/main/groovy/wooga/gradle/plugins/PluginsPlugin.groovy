@@ -18,6 +18,7 @@ package wooga.gradle.plugins
 
 import com.gradle.publish.PluginBundleExtension
 import com.gradle.publish.PublishPlugin
+import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.gradle.GrgitPlugin
 import org.gradle.api.*
 import org.gradle.api.artifacts.Configuration
@@ -141,11 +142,15 @@ class PluginsPlugin implements Plugin<Project> {
 
     private static void configureReleaseNotes(Project project) {
         def githubExt = project.extensions.getByType(GithubPluginExtension)
+        def grgit = project.extensions.getByName('grgit') as Grgit
         def releaseNotesProvider = project.tasks.register(RELEASE_NOTES_TASK_NAME, GenerateReleaseNotes)
         releaseNotesProvider.configure { task ->
             task.onlyIf(new ProjectStatusTaskSpec("rc", "final"))
             def versionExt = project.extensions.findByType(VersionPluginExtension)
             if (versionExt) {
+                task.branch.set(project.provider({
+                    grgit.branch.current().name
+                }))
                 task.from.set(versionExt.version.map { version ->
                     if(version.previousVersion) {
                         return "v${version.previousVersion}"
@@ -252,6 +257,7 @@ class PluginsPlugin implements Plugin<Project> {
     private static void configureGithubPublishTask(Project project) {
         def tasks = project.tasks
         def githubExt = project.extensions.getByType(GithubPluginExtension)
+        def grgit = project.extensions.getByName('grgit') as Grgit
         def releaseNotesTask = tasks.named(RELEASE_NOTES_TASK_NAME, GenerateReleaseNotes).forUseAtConfigurationTime()
         def publishTaskProvider = tasks.named(GithubPublishPlugin.PUBLISH_TASK_NAME)
         publishTaskProvider.configure {GithubPublish githubPublishTask ->
@@ -259,6 +265,7 @@ class PluginsPlugin implements Plugin<Project> {
             githubPublishTask.with {
                 releaseName.set(project.provider {project.version.toString()})
                 tagName.set(project.provider {"v${project.version}"})
+                targetCommitish.set(project.provider({grgit.branch.current().name}))
                 prerelease.set(project.properties['release.stage']!='final')
                 body.set(releaseNotesTask.flatMap({it.output.map({it.asFile.text })}))
             }
