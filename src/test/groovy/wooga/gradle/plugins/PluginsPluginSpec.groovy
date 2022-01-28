@@ -315,8 +315,27 @@ class PluginsPluginSpec extends ProjectSpec {
 
         then: "github publish task should be configured"
         ghPublishTask.releaseName.get() == project.version.toString()
+        ghPublishTask.targetCommitish.get() == getGit().branch.current().name
         ghPublishTask.tagName.get() == "v${project.version}"
         ghPublishTask.prerelease.get() == (project.properties['release.stage'] != 'final')
+    }
+
+    def "configures github release notes task"() {
+        given: "configured github plugin with branch name property"
+        project.ext["github.repositoryName"] = repo.fullName
+
+        and: "switch current branch"
+        getGit().checkout(branch: 'test_branch', createBranch: true, startPoint: getGit().resolve.toRevisionString(getGit().branch.current().fullName))
+
+        and: "project with plugins plugin applied"
+        project.plugins.apply(PLUGIN_NAME)
+        project.evaluate()
+
+        when: "evaluating github release notes task"
+        def releaseNotes = project.tasks.getByName(PluginsPlugin.RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes
+
+        then: "github publish task should be configured"
+        releaseNotes.branch.get() == 'test_branch'
     }
 
     def createSrcFile(String folderStr, String filename) {
