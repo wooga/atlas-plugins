@@ -1,6 +1,6 @@
 package wooga.gradle.plugins
 
-
+import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.gradle.GrgitPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -57,6 +57,7 @@ class PrivatePluginsPlugin implements Plugin<Project> {
     }
 
     private static void configureReleaseNotes(Project project) {
+        def grgit = project.extensions.getByName('grgit') as Grgit
         project.tasks.register(RELEASE_NOTES_TASK_NAME, GenerateReleaseNotes) { task ->
             task.onlyIf(new ProjectStatusTaskSpec("rc", "final"))
             def versionExt = project.extensions.findByType(VersionPluginExtension)
@@ -68,7 +69,9 @@ class PrivatePluginsPlugin implements Plugin<Project> {
                         return null
                     }
                 })
-                task.branch.set(project.extensions.grgit.branch.current.name as String)
+                task.branch.set(project.provider({
+                    grgit.branch.current().name
+                }))
                 task.output.set(new File(project.buildDir, "/outputs/release-notes.md"))
                 task.strategy.set(new ReleaseNotesStrategy())
             }
@@ -79,12 +82,13 @@ class PrivatePluginsPlugin implements Plugin<Project> {
         def tasks = project.tasks
         def releaseNotesTask = tasks.getByName(RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes
         def publishTaskProvider = tasks.named(GithubPublishPlugin.PUBLISH_TASK_NAME)
+        def grgit = project.extensions.getByName('grgit') as Grgit
         publishTaskProvider.configure { GithubPublish githubPublishTask ->
             githubPublishTask.onlyIf(new ProjectStatusTaskSpec("rc", "final"))
             githubPublishTask.with {
                 releaseName.set(project.provider { project.version.toString() })
                 tagName.set(project.provider { "v${project.version}" })
-                targetCommitish.set(project.extensions.grgit.branch.current.name as String)
+                targetCommitish.set(project.provider({grgit.branch.current().name}))
                 prerelease.set(project.properties['release.stage'] != 'final')
                 body.set(releaseNotesTask.output.map { it.asFile.text })
             }

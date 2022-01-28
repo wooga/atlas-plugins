@@ -194,14 +194,33 @@ class PrivatePluginsPluginSpec extends LocalPluginsPluginSpec {
         project.plugins.apply(PLUGIN_NAME)
         project.evaluate()
 
+        and: "switch current branch"
+        getGit().checkout(branch: 'test_branch', createBranch: true, startPoint: getGit().resolve.toRevisionString(getGit().branch.current().fullName))
+
         when: "evaulating github publish task"
         def ghPublishTask = project.tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME) as GithubPublish
 
         then: "github publish task should be configured"
+        ghPublishTask.targetCommitish.get() == 'test_branch'
         ghPublishTask.releaseName.get() == project.version.toString()
         ghPublishTask.tagName.get() == "v${project.version}"
         ghPublishTask.targetCommitish.get() == project.extensions.grgit.branch.current.name as String
         ghPublishTask.prerelease.get() == (project.properties['release.stage'] != 'final')
+    }
+
+    def "configures github release notes task"() {
+        given: "project with plugins plugin applied"
+        project.plugins.apply(PLUGIN_NAME)
+        project.evaluate()
+
+        and: "switch current branch"
+        getGit().checkout(branch: 'test_branch', createBranch: true, startPoint: getGit().resolve.toRevisionString(getGit().branch.current().fullName))
+
+        when: "evaluating github release notes task"
+        def releaseNotes = project.tasks.getByName(PrivatePluginsPlugin.RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes
+
+        then: "github publish task should be configured"
+        releaseNotes.branch.get() == 'test_branch'
     }
 
     File createSrcFile(String folderStr, String filename) {
