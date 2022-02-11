@@ -30,7 +30,7 @@ buildscript {
     }
     configurations.all {
         resolutionStrategy {
-            force 'org.ajoberstar.grgit:grgit-core:4.1.1'
+            force 'org.ajoberstar.grgit:grgit-core:5.0.0'
         }
     }
 }
