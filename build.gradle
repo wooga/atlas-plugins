@@ -65,11 +65,12 @@ github {
 
 
 dependencies {
+    implementation 'com.wooga.gradle:gradle-commons:[1,2)'
     implementation 'gradle.plugin.net.wooga.gradle:atlas-github:2.+'
     implementation 'com.gradle.publish:plugin-publish-plugin:0.14.0'
     implementation 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:[2,3)'
     implementation 'gradle.plugin.net.wooga.gradle:atlas-GithubReleaseNotes:[0.1, 0.2)'
-    implementation 'org.ajoberstar.grgit:grgit-gradle:4.1.0'
+    implementation 'org.ajoberstar.grgit:grgit-gradle:4.1.1'
     implementation 'gradle.plugin.net.wooga.gradle:atlas-version:[1.0.1,2)'
     implementation 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.0'
     testImplementation('com.netflix.nebula:nebula-test:[8,9)') {
