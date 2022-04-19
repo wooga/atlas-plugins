@@ -320,12 +320,18 @@ class PluginsPluginSpec extends ProjectSpec {
         ghPublishTask.prerelease.get() == (project.properties['release.stage'] != 'final')
     }
 
-    def "configures github release notes task"() {
+    @Unroll("configures github release notes task for git repo #description")
+    def "configures github release notes task for git repo"() {
         given: "configured github plugin with branch name property"
         project.ext["github.repositoryName"] = repo.fullName
 
         and: "switch current branch"
-        getGit().checkout(branch: 'test_branch', createBranch: true, startPoint: getGit().resolve.toRevisionString(getGit().branch.current().fullName))
+        git.checkout(branch: 'test_branch', createBranch: true, startPoint: getGit().resolve.toRevisionString(getGit().branch.current().fullName))
+
+        and: "adds release tag if needed"
+        if (existingReleaseTag != null) {
+            git.tag.add(name: existingReleaseTag)
+        }
 
         and: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
@@ -336,18 +342,12 @@ class PluginsPluginSpec extends ProjectSpec {
 
         then: "github publish task should be configured"
         releaseNotes.branch.get() == 'test_branch'
-    }
-
-    def createSrcFile(String folderStr, String filename) {
-        File folder = new File(projectDir, folderStr)
-        folder.mkdirs()
-        File srcFile = new File(folder, filename)
-        srcFile.createNewFile()
-        srcFile << """\
-            class ${filename.split("\\.")[0]} {
-            }
-            """.stripIndent()
-        return folder
+        !releaseNotes.to.present
+        releaseNotes.from.orNull == expectedFrom
+        where:
+        existingReleaseTag | expectedFrom | description
+        "v0.0.1"           | "v0.0.1"     | "with existing release"
+        null               | null         | "without existing release"
     }
 
     def "will force groovy modules to local groovy version"() {
@@ -381,6 +381,17 @@ class PluginsPluginSpec extends ProjectSpec {
         git.checkout(branch: repo.defaultBranch.name)
         git.pull(remote: "${remote}", branch: repo.defaultBranch.name)
         git.commit(message: 'initial commit')
-        git.tag.add(name: "v0.0.1")
+    }
+
+    def createSrcFile(String folderStr, String filename) {
+        File folder = new File(projectDir, folderStr)
+        folder.mkdirs()
+        File srcFile = new File(folder, filename)
+        srcFile.createNewFile()
+        srcFile << """\
+            class ${filename.split("\\.")[0]} {
+            }
+            """.stripIndent()
+        return folder
     }
 }

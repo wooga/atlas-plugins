@@ -182,25 +182,25 @@ class ReleaseNotesStrategySpec extends Specification {
         def pullRequests = [pr1, pr2]
 
         and: "a changeset"
-        def changes = new BaseChangeSet("test",null,null,logs,pullRequests)
+        def changes = new BaseChangeSet("test", null, null, logs, pullRequests)
 
         when:
         def result = strategy.render(changes)
         println(result)
         then:
         def expectedResult = """
-        ## Changes
-    
-        * ![ADD] new test feature [#2](https://github.com/test/issue/2) [@TestUser](https://github.com/TestUser)
-        * ![ADD] test suite startup [#1](https://github.com/test/issue/1) [@TestUser](https://github.com/TestUser)
-        * ![FIX] test suite startup [#2](https://github.com/test/issue/2) [@TestUser](https://github.com/TestUser)
-        * ![FIX] test suite tools [#2](https://github.com/test/issue/2) [@TestUser](https://github.com/TestUser)
-        * ![FIX] runner test setup code [#1](https://github.com/test/issue/1) [@TestUser](https://github.com/TestUser)
-        * ![IMPROVE] test suite [#2](https://github.com/test/issue/2) [@TestUser](https://github.com/TestUser)
-        
-        [ADD]: https://resources.atlas.wooga.com/icons/icon_add.svg
-        [FIX]: https://resources.atlas.wooga.com/icons/icon_fix.svg
-        [IMPROVE]: https://resources.atlas.wooga.com/icons/icon_improve.svg
+## Changes
+
+* ![ADD] new test feature [#2](https://github.com/test/issue/2) [@TestUser](https://github.com/TestUser)
+* ![ADD] test suite startup [#1](https://github.com/test/issue/1) [@TestUser](https://github.com/TestUser)
+* ![FIX] test suite startup [#2](https://github.com/test/issue/2) [@TestUser](https://github.com/TestUser)
+* ![FIX] test suite tools [#2](https://github.com/test/issue/2) [@TestUser](https://github.com/TestUser)
+* ![FIX] runner test setup code [#1](https://github.com/test/issue/1) [@TestUser](https://github.com/TestUser)
+* ![IMPROVE] test suite [#2](https://github.com/test/issue/2) [@TestUser](https://github.com/TestUser)
+
+[ADD]: https://resources.atlas.wooga.com/icons/icon_add.svg
+[FIX]: https://resources.atlas.wooga.com/icons/icon_fix.svg
+[IMPROVE]: https://resources.atlas.wooga.com/icons/icon_improve.svg
 		""".stripIndent().trim().normalize()
         def res = result.stripIndent().trim().normalize()
         res == expectedResult

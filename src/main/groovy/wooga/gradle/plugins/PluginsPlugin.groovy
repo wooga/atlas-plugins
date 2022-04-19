@@ -141,7 +141,6 @@ class PluginsPlugin implements Plugin<Project> {
     }
 
     private static void configureReleaseNotes(Project project) {
-        def githubExt = project.extensions.getByType(GithubPluginExtension)
         def grgit = project.extensions.getByName('grgit') as Grgit
         def releaseNotesProvider = project.tasks.register(RELEASE_NOTES_TASK_NAME, GenerateReleaseNotes)
         releaseNotesProvider.configure { task ->
@@ -152,7 +151,7 @@ class PluginsPlugin implements Plugin<Project> {
                     grgit.branch.current().name
                 }))
                 task.from.set(versionExt.version.map { version ->
-                    if(version.previousVersion) {
+                    if(version.previousVersion && version.previousVersion != "0.0.0") {
                         return "v${version.previousVersion}"
                     } else {
                         return null
