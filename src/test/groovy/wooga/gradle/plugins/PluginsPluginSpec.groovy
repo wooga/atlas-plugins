@@ -24,6 +24,7 @@ import com.wooga.spock.extensions.github.api.TravisBuildNumberPostFix
 import nebula.test.ProjectSpec
 import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.gradle.GrgitPlugin
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Task
 import org.gradle.api.plugins.GroovyPlugin
@@ -350,12 +351,13 @@ class PluginsPluginSpec extends ProjectSpec {
         return folder
     }
 
-    def "will force groovy modules to local groovy version"() {
+    def "will force groovy modules to local groovy version or minimum 2.5.14"() {
         given: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
 
         expect:
-        def localGroovy = GroovySystem.getVersion()
+        def localGroovyVersion = new DefaultArtifactVersion(GroovySystem.getVersion())
+        def localGroovy = localGroovyVersion >= new DefaultArtifactVersion("2.5.14") ? GroovySystem.getVersion() : "2.5.14"
         project.configurations.every {
             //we turn the list of force modules to string to not test against gradle internals
             def forcedModules = it.resolutionStrategy.forcedModules.toList().collect { it.toString() }

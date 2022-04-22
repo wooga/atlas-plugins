@@ -20,6 +20,7 @@ import com.gradle.publish.PluginBundleExtension
 import com.gradle.publish.PublishPlugin
 import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.gradle.GrgitPlugin
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion
 import org.gradle.api.*
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolutionStrategy
@@ -86,7 +87,6 @@ class PluginsPlugin implements Plugin<Project> {
     public static final String RELEASE_NOTES_TASK_NAME = "releaseNotes"
 
 
-
     @Override
     void apply(Project project) {
 
@@ -130,7 +130,8 @@ class PluginsPlugin implements Plugin<Project> {
 
         project.configurations.all({ Configuration configuration ->
             configuration.resolutionStrategy({ ResolutionStrategy strategy ->
-                def localGroovy = GroovySystem.getVersion()
+                def localGroovyVersion = new DefaultArtifactVersion(GroovySystem.getVersion())
+                def localGroovy = localGroovyVersion >= new DefaultArtifactVersion("2.5.14") ? GroovySystem.getVersion() : "2.5.14"
                 strategy.force("org.codehaus.groovy:groovy-all:${localGroovy}")
                 strategy.force("org.codehaus.groovy:groovy-macro:${localGroovy}")
                 strategy.force("org.codehaus.groovy:groovy-nio:${localGroovy}")
@@ -152,7 +153,7 @@ class PluginsPlugin implements Plugin<Project> {
                     grgit.branch.current().name
                 }))
                 task.from.set(versionExt.version.map { version ->
-                    if(version.previousVersion) {
+                    if (version.previousVersion) {
                         return "v${version.previousVersion}"
                     } else {
                         return null
@@ -167,7 +168,7 @@ class PluginsPlugin implements Plugin<Project> {
 
     private static void configureVersionPluginExtension(Project project) {
         def versionExt = project.extensions.findByType(VersionPluginExtension)
-        if(versionExt) {
+        if (versionExt) {
             versionExt.versionScheme.set(VersionScheme.semver2)
             versionExt.versionCodeScheme.set(VersionCodeScheme.releaseCount)
         }
@@ -183,20 +184,20 @@ class PluginsPlugin implements Plugin<Project> {
         JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
         DependencyHandler dependencies = project.getDependencies();
         dependencies.add("api", dependencies.gradleApi())
-        dependencies.add("testImplementation", 'junit:junit:[4,5)')
+        dependencies.add("testImplementation", 'junit:junit:[4.13.1,5)')
         dependencies.add("testImplementation", 'org.spockframework:spock-core:1.3-groovy-2.5', {
             exclude module: 'groovy-all'
         })
-        dependencies.add("testImplementation", 'com.netflix.nebula:nebula-test:[8,9)')
-        dependencies.add("testImplementation", 'com.github.stefanbirkner:system-rules:[1,2)')
-        dependencies.add("implementation", 'commons-io:commons-io:[2,3)')
+        dependencies.add("testImplementation", 'com.netflix.nebula:nebula-test:[8,9[')
+        dependencies.add("testImplementation", 'com.github.stefanbirkner:system-rules:[1,2[')
+        dependencies.add("implementation", 'commons-io:commons-io:[2.7,3)')
         dependencies.add("integrationTestImplementation", javaConvention.sourceSets.getByName("test").output)
     }
 
     private static def configureGradleDocsTask(final Project project) {
         TaskContainer tasks = project.tasks
         def groovyDocTask = tasks.named(GroovyPlugin.GROOVYDOC_TASK_NAME, Groovydoc)
-        tasks.withType(Groovydoc).configureEach {task ->
+        tasks.withType(Groovydoc).configureEach { task ->
             if (task.name == GroovyPlugin.GROOVYDOC_TASK_NAME) {
                 PluginBundleExtension extension = project.getExtensions().getByType(PluginBundleExtension)
                 Callable<String> docTitle = {
@@ -215,16 +216,16 @@ class PluginsPlugin implements Plugin<Project> {
             }
         }
 
-        def publishGroovydocTask = tasks.register(PUBLISH_GROOVY_DOCS_TASK_NAME, Sync) {publishGroovydocTask ->
+        def publishGroovydocTask = tasks.register(PUBLISH_GROOVY_DOCS_TASK_NAME, Sync) { publishGroovydocTask ->
             publishGroovydocTask.description = "Publish groovy docs to output directory ${DOC_EXPORT_DIR}"
             publishGroovydocTask.group = PublishingPlugin.PUBLISH_TASK_GROUP
-            publishGroovydocTask.from(groovyDocTask.map({it.outputs.files}))
+            publishGroovydocTask.from(groovyDocTask.map({ it.outputs.files }))
             publishGroovydocTask.destinationDir = project.file(DOC_EXPORT_DIR)
 
         }
 
         def publishTask = tasks.named(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
-        publishTask.configure {dependsOn(publishGroovydocTask)}
+        publishTask.configure { dependsOn(publishGroovydocTask) }
     }
 
     private static configureTaskRuntimeDependencies(final Project project) {
@@ -260,14 +261,14 @@ class PluginsPlugin implements Plugin<Project> {
         def grgit = project.extensions.getByName('grgit') as Grgit
         def releaseNotesTask = tasks.named(RELEASE_NOTES_TASK_NAME, GenerateReleaseNotes).forUseAtConfigurationTime()
         def publishTaskProvider = tasks.named(GithubPublishPlugin.PUBLISH_TASK_NAME)
-        publishTaskProvider.configure {GithubPublish githubPublishTask ->
+        publishTaskProvider.configure { GithubPublish githubPublishTask ->
             githubPublishTask.onlyIf(new ProjectStatusTaskSpec("rc", "final"))
             githubPublishTask.with {
-                releaseName.set(project.provider {project.version.toString()})
-                tagName.set(project.provider {"v${project.version}"})
-                targetCommitish.set(project.provider({grgit.branch.current().name}))
-                prerelease.set(project.properties['release.stage']!='final')
-                body.set(releaseNotesTask.flatMap({it.output.map({it.asFile.text })}))
+                releaseName.set(project.provider { project.version.toString() })
+                tagName.set(project.provider { "v${project.version}" })
+                targetCommitish.set(project.provider({ grgit.branch.current().name }))
+                prerelease.set(project.properties['release.stage'] != 'final')
+                body.set(releaseNotesTask.flatMap({ it.output.map({ it.asFile.text }) }))
             }
         }
     }
@@ -279,15 +280,15 @@ class PluginsPlugin implements Plugin<Project> {
         JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
 
         def branchName = localBranchProviderWithPR(project, project.extensions.getByType(GithubPluginExtension)).
-        map {it.trim().isEmpty()? null : it }.
-        map {
-            project.logger.info("Using ${it} as sonarqube branch")
-            return it
-        }.orElse(project.provider {
+                map { it.trim().isEmpty() ? null : it }.
+                map {
+                    project.logger.info("Using ${it} as sonarqube branch")
+                    return it
+                }.orElse(project.provider {
             project.logger.info("Not setting branch information on sonarqube")
             return null as String
         })
-        project.rootProject.tasks.named(SonarQubeConfiguration.TASK_NAME) {sonarTask ->
+        project.rootProject.tasks.named(SonarQubeConfiguration.TASK_NAME) { sonarTask ->
             sonarExt.properties(sonarConfig.generateSonarProperties(githubExt.repositoryName, branchName, javaConvention))
             sonarTask.onlyIf { System.getenv('CI') }
         }
@@ -304,7 +305,7 @@ class PluginsPlugin implements Plugin<Project> {
                                              final TaskProvider<Task> testTask) {
         project.tasks.withType(JacocoReport).configureEach { JacocoReport jacocoReport ->
             if (jacocoReport.name == "jacoco" + JavaPlugin.TEST_TASK_NAME.capitalize() + "Report") {
-                jacocoReport.reports{ JacocoReportsContainer configurableReports ->
+                jacocoReport.reports { JacocoReportsContainer configurableReports ->
                     configurableReports.xml.enabled = true
                     configurableReports.html.enabled = true
                 }
@@ -316,8 +317,8 @@ class PluginsPlugin implements Plugin<Project> {
     private static void configureTestReportOutput(final Project project) {
         ReportingExtension reporting = project.extensions.getByName(ReportingExtension.NAME) as ReportingExtension
 
-        project.tasks.withType(Test).configureEach {task ->
-                task.reports.html.setDestination(project.file("${reporting.baseDir}/${task.name}"))
+        project.tasks.withType(Test).configureEach { task ->
+            task.reports.html.setDestination(project.file("${reporting.baseDir}/${task.name}"))
         }
     }
 
@@ -384,7 +385,7 @@ class PluginsPlugin implements Plugin<Project> {
 
         return githubExt.branchName.map({ String currentBranch ->
             return githubExt.repositoryName.map { repositoryName ->
-                return clientProvider.map{ client ->
+                return clientProvider.map { client ->
                     def repository = client.getRepository(repositoryName)
                     if (currentBranch.toUpperCase().startsWith("PR-")) {
                         def maybePrNumber = currentBranch.replace("PR-", "").trim()
@@ -405,8 +406,8 @@ class PluginsPlugin implements Plugin<Project> {
         return project.provider {
             try {
                 return provider.get()
-            }catch(Throwable e) {
-                if(exceptionClass.isInstance(e)) {
+            } catch (Throwable e) {
+                if (exceptionClass.isInstance(e)) {
                     return null
                 }
                 throw e
