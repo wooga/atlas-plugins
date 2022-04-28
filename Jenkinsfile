@@ -21,7 +21,8 @@ withCredentials([usernamePassword(credentialsId: 'github_integration', passwordV
                  usernamePassword(credentialsId: 'github_integration_2', passwordVariable: 'githubPassword2', usernameVariable: 'githubUser2'),
                  usernamePassword(credentialsId: 'github_integration_3', passwordVariable: 'githubPassword3', usernameVariable: 'githubUser3'),
                  string(credentialsId: 'atlas_plugins_coveralls_token', variable: 'coveralls_token'),
-                 string(credentialsId: 'atlas_plugins_sonar_token', variable: 'sonar_token')]) {
+                 string(credentialsId: 'atlas_plugins_sonar_token', variable: 'sonar_token'),
+                 string(credentialsId: 'atlas_plugins_snyk_token', variable: 'SNYK_TOKEN')]) {
     def testEnvironment = [
         'macos':
         [

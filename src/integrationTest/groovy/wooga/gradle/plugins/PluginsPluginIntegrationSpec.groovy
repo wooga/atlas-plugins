@@ -45,6 +45,8 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         repo.createRelease("0.0.1", "v0.0.1")
     }
     def setup() {
+        environmentVariables.set("GITHUB_LOGIN", repo.userName)
+        environmentVariables.set("GITHUB_PASSWORD", repo.token)
         def remote = "origin"
         git = Grgit.init(dir: projectDir)
         git.remote.add(name: remote, url: repo.httpTransportUrl)

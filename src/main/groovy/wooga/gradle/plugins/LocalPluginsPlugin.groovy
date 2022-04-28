@@ -18,6 +18,7 @@ import org.gradle.api.reporting.ReportingExtension
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskContainer
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion
 import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -86,8 +87,8 @@ class LocalPluginsPlugin implements Plugin<Project> {
         JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
         DependencyHandler dependencies = project.getDependencies();
         dependencies.add("api", dependencies.gradleApi())
-        dependencies.add("implementation", 'commons-io:commons-io:[2,3)')
-        dependencies.add("testImplementation", 'junit:junit:[4,5)')
+        dependencies.add("implementation", 'commons-io:commons-io:[2.7,3)')
+        dependencies.add("testImplementation", 'junit:junit:[4.13.1,5)')
         dependencies.add("testImplementation", 'org.spockframework:spock-core:1.3-groovy-2.5', {
             exclude module: 'groovy-all'
         })
@@ -227,11 +228,13 @@ class LocalPluginsPlugin implements Plugin<Project> {
     private static void forceGroovyVersion(Project project, String version) {
         project.configurations.all({ Configuration configuration ->
             configuration.resolutionStrategy({ ResolutionStrategy strategy ->
-                strategy.force("org.codehaus.groovy:groovy-all:${version}")
-                strategy.force("org.codehaus.groovy:groovy-macro:${version}")
-                strategy.force("org.codehaus.groovy:groovy-nio:${version}")
-                strategy.force("org.codehaus.groovy:groovy-sql:${version}")
-                strategy.force("org.codehaus.groovy:groovy-xml:${version}")
+                def localGroovyVersion = new DefaultArtifactVersion(GroovySystem.getVersion())
+                def localGroovy = localGroovyVersion >= new DefaultArtifactVersion("2.5.14") ? GroovySystem.getVersion() : "2.5.14"
+                strategy.force("org.codehaus.groovy:groovy-all:${localGroovy}")
+                strategy.force("org.codehaus.groovy:groovy-macro:${localGroovy}")
+                strategy.force("org.codehaus.groovy:groovy-nio:${localGroovy}")
+                strategy.force("org.codehaus.groovy:groovy-sql:${localGroovy}")
+                strategy.force("org.codehaus.groovy:groovy-xml:${localGroovy}")
             })
         })
     }

@@ -3,6 +3,7 @@ package wooga.gradle.plugins
 
 import nebula.test.ProjectSpec
 import org.ajoberstar.grgit.Grgit
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Task
 import org.gradle.api.plugins.GroovyPlugin
@@ -261,7 +262,8 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         project.plugins.apply(PLUGIN_NAME)
 
         expect:
-        def localGroovy = GroovySystem.getVersion()
+        def localGroovyVersion = new DefaultArtifactVersion(GroovySystem.getVersion())
+        def localGroovy = localGroovyVersion >= new DefaultArtifactVersion("2.5.14") ? GroovySystem.getVersion() : "2.5.14"
         project.configurations.every {
             //we turn the list of force modules to string to not test against gradle internals
             def forcedModules = it.resolutionStrategy.forcedModules.toList().collect { it.toString() }
@@ -305,8 +307,8 @@ class LocalPluginsPluginSpec extends ProjectSpec {
 
         where:
         scope                | dependencyString                        | version
-        "implementation"     | "commons-io:commons-io"                 | "[2,3)"
-        "testImplementation" | "junit:junit"                           | "[4,5)"
+        "implementation"     | "commons-io:commons-io"                 | "[2.7,3)"
+        "testImplementation" | "junit:junit"                           | "[4.13.1,5)"
         "testImplementation" | "org.spockframework:spock-core"         | "1.3-groovy-2.5"
         "testImplementation" | "com.netflix.nebula:nebula-test"        | "[8,9)"
         "testImplementation" | "com.github.stefanbirkner:system-rules" | "[1,2)"
