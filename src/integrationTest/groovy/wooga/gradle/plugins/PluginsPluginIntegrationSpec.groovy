@@ -40,12 +40,16 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
     )
     Repository repo
     Grgit git
+
     def setupSpec() {
         repo.commit('initial commit')
         repo.createRelease("0.0.1", "v0.0.1")
     }
 
     def setup() {
+
+        environmentVariables.set("GITHUB_LOGIN", repo.userName)
+        environmentVariables.set("GITHUB_PASSWORD", repo.token)
         def remote = "origin"
         git = Grgit.init(dir: projectDir)
         git.remote.add(name: remote, url: repo.httpTransportUrl)
@@ -108,18 +112,18 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         def result = runTasks(lifecycleTask, "--dry-run")
 
         then:
-        tasksToRun.every {taskToRun ->
+        tasksToRun.every { taskToRun ->
             result.standardOutput.contains(":$taskToRun")
         }
 
         where:
-        tasksToRun                                                           | lifecycleTask
-        ["integrationTest", "test"]                                          | "check"
-        ["releaseNotes"]                                                     | "githubPublish"
-        ["check", "publishPlugins", "githubPublish", "publishGroovydocs"]    | "publish"
-        ["publish"]                                                          | "final"
-        ["publish"]                                                          | "rc"
-        ["check", "publishToMavenLocal"]                                     | "snapshot"
+        tasksToRun                                                        | lifecycleTask
+        ["integrationTest", "test"]                                       | "check"
+        ["releaseNotes"]                                                  | "githubPublish"
+        ["check", "publishPlugins", "githubPublish", "publishGroovydocs"] | "publish"
+        ["publish"]                                                       | "final"
+        ["publish"]                                                       | "rc"
+        ["check", "publishToMavenLocal"]                                  | "snapshot"
     }
 
     @Unroll
@@ -129,10 +133,10 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         writeTest('src/test/java/', "wooga.test", false)
 
         when:
-         def result = runTasks(lifecycleTask ,"-Prelease.stage=${releaseStage}")
+        def result = runTasks(lifecycleTask, "-Prelease.stage=${releaseStage}")
 
         then:
-        skip=="skip"?
+        skip == "skip" ?
                 result.standardOutput.contains("${lifecycleTask} SKIPPED") :
                 !result.wasSkipped(lifecycleTask)
 
@@ -159,13 +163,13 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         result.standardOutput.indexOf(":$taskAfter ") > result.standardOutput.indexOf(":$task ")
 
         where:
-        taskAfter             | task              | execute
-        "integrationTest"     | "test"            | ["check"]
-        "integrationTest"     | "test"            | ["integrationTest", "test"]
-        "integrationTest"     | "test"            | ["check", "integrationTest", "test"]
-        "githubPublish"       | "publishPlugins"  | ["publishPlugins", "publish", "final", "rc"]
-        "publishPlugins"      | "check"           | ["publishPlugins", "publish", "final", "rc"]
-        "publishToMavenLocal" | "check"           | ["publishToMavenLocal", "snapshot"]
+        taskAfter             | task             | execute
+        "integrationTest"     | "test"           | ["check"]
+        "integrationTest"     | "test"           | ["integrationTest", "test"]
+        "integrationTest"     | "test"           | ["check", "integrationTest", "test"]
+        "githubPublish"       | "publishPlugins" | ["publishPlugins", "publish", "final", "rc"]
+        "publishPlugins"      | "check"          | ["publishPlugins", "publish", "final", "rc"]
+        "publishToMavenLocal" | "check"          | ["publishToMavenLocal", "snapshot"]
     }
 
     //Test tasks hangs on windows systems
@@ -369,10 +373,10 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         repo.commit("commitmsg", actualPRBranch)
         def pr = repo.createPullRequest("Test", actualPRBranch, repo.defaultBranch.name, "description")
 
-        and:"local git repository in a PR branch with same number as created PR"
+        and: "local git repository in a PR branch with same number as created PR"
         def git = Grgit.init(dir: projectDir)
-        git.commit(message:"any")
-        git.checkout(branch:"PR-${pr.number}", createBranch: true)
+        git.commit(message: "any")
+        git.checkout(branch: "PR-${pr.number}", createBranch: true)
         when: "running sonarqube task"
         def results = runTasks("sonarqube")
 
@@ -385,7 +389,7 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
         environmentVariables.set("CI", "true")
         and: "no pull request associated to this branch"
 
-        and:"local git repository"
+        and: "local git repository"
         def git = Grgit.init(dir: projectDir)
 
         when: "running sonarqube task"
