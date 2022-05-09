@@ -33,7 +33,6 @@ import wooga.gradle.github.publish.GithubPublishPlugin
  *
  * - com.netflix.nebula:nebula-test
  * - org.spockframework:spock-core
- * - org.kt3k.gradle.plugin:coveralls-gradle-plugin
  * - commons-io:commons-io
  * - com.gradle.publish:plugin-publish-plugin
  *

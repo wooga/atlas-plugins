@@ -1,5 +1,6 @@
 package wooga.gradle.plugins
 
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion
 import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -18,7 +19,6 @@ import org.gradle.api.reporting.ReportingExtension
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskContainer
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion
 import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -29,7 +29,6 @@ import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.gradle.testing.jacoco.tasks.JacocoReportsContainer
-import org.kt3k.gradle.plugin.CoverallsPlugin
 import org.sonarqube.gradle.SonarQubeExtension
 import wooga.gradle.plugins.sonarqube.SonarQubeConfiguration
 
@@ -50,7 +49,6 @@ class LocalPluginsPlugin implements Plugin<Project> {
             apply(JacocoPlugin)
             apply(MavenPublishPlugin)
             apply(JavaGradlePluginPlugin)
-            apply(CoverallsPlugin)
             apply(SonarQubeConfiguration.PLUGIN_CLASS)
         }
 
@@ -62,7 +60,6 @@ class LocalPluginsPlugin implements Plugin<Project> {
         configureJacocoTestReport(project, integrationTestTask, testTask)
         configureSonarQubeExtension(project, SonarQubeConfiguration.withEnvVarPropertyFallback(project))
         configureTestReportOutput(project)
-        configureCoverallsTask(project)
 
         setupRepositories(project)
         setupDependencies(project)
@@ -140,11 +137,6 @@ class LocalPluginsPlugin implements Plugin<Project> {
 
         Task sonarTask = project.rootProject.tasks.getByName(SonarQubeConfiguration.TASK_NAME)
         sonarTask.onlyIf { System.getenv('CI') }
-    }
-
-    private static void configureCoverallsTask(final Project project) {
-        def coverallsTask = project.tasks.getByName(COVERALLS_TASK_NAME)
-        coverallsTask.onlyIf { System.getenv('CI') }
     }
 
     private static configureJacocoTestReport(final Project project, final Task integrationTestTask, Task testTask) {

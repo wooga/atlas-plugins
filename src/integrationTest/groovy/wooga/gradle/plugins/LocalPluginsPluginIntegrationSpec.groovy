@@ -192,11 +192,6 @@ class LocalPluginsPluginIntegrationSpec extends IntegrationSpec {
 
         where:
         taskToRun   | skipped | env  | value
-        "coveralls" | false   | 'CI' | "TRUE"
-        "coveralls" | false   | 'CI' | "1"
-        "coveralls" | false   | 'CI' | "0"
-        "coveralls" | false   | 'CI' | "some value"
-        "coveralls" | true    | 'CI' | null
         "sonarqube" | false   | 'CI' | "TRUE"
         "sonarqube" | false   | 'CI' | "1"
         "sonarqube" | false   | 'CI' | "0"

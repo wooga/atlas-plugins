@@ -35,7 +35,6 @@ import org.gradle.plugin.devel.plugins.JavaGradlePluginPlugin
 import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
-import org.kt3k.gradle.plugin.CoverallsPlugin
 import org.sonarqube.gradle.SonarQubeExtension
 import org.sonarqube.gradle.SonarQubePlugin
 import org.sonarqube.gradle.SonarQubeTask
@@ -81,7 +80,6 @@ class PluginsPluginSpec extends ProjectSpec {
         "plugin-publish"       | PublishPlugin
         "java-gradle-plugin"   | JavaGradlePluginPlugin
         "jacoco"               | JacocoPlugin
-        "coveralls"            | CoverallsPlugin
         "version"              | VersionPlugin
         "grgit"                | GrgitPlugin
         "net.wooga.github"     | GithubPlugin
@@ -336,12 +334,12 @@ class PluginsPluginSpec extends ProjectSpec {
             //we turn the list of force modules to string to not test against gradle internals
             def forcedModules = it.resolutionStrategy.forcedModules.toList().collect { it.toString() }
             forcedModules.containsAll([
-                        "org.codehaus.groovy:groovy-all:${localGroovy}".toString(),
-                        "org.codehaus.groovy:groovy-macro:${localGroovy}".toString(),
-                        "org.codehaus.groovy:groovy-nio:${localGroovy}".toString(),
-                        "org.codehaus.groovy:groovy-sql:${localGroovy}".toString(),
-                        "org.codehaus.groovy:groovy-xml:${localGroovy}".toString()
-                    ]
+                    "org.codehaus.groovy:groovy-all:${localGroovy}".toString(),
+                    "org.codehaus.groovy:groovy-macro:${localGroovy}".toString(),
+                    "org.codehaus.groovy:groovy-nio:${localGroovy}".toString(),
+                    "org.codehaus.groovy:groovy-sql:${localGroovy}".toString(),
+                    "org.codehaus.groovy:groovy-xml:${localGroovy}".toString()
+            ]
             )
         }
     }
