@@ -14,11 +14,14 @@ Plugin to establish conventions for a atlas gradle plugins. This plugin is used 
 Usage
 =====
 
+Public Plugins
+--------------
+
 **build.gradle**
 
 ```groovy
 plugins {
-  id "net.wooga.unity" version "1.2.0"
+  id "net.wooga.plugins" version "3.2.0"
 }
 ```
 
@@ -30,9 +33,38 @@ It applies the following plugins:
 * 'plugin-publish'
 * 'nebular.release'
 * 'jacoco'
-* 'com.github.kt3k.coveralls'
 * 'net.wooga.github'
 * 'maven-publish'
+
+Private Plugins
+---------------
+
+The private plugin conventions are the base for the normal plugin. The main difference is the lack of
+any publishing settings.
+
+**build.gradle**
+
+```groovy
+plugins {
+  id "net.wooga.plugins-private" version "3.2.0"
+}
+```
+
+Local Plugins
+-------------
+
+The local plugin is for cases when plugins are developed and used inside another project. With this setup
+it is easier to pull out a plugin later to use it for multiple projects either as an private plugin
+or public plugin
+
+
+**build.gradle**
+
+```groovy
+plugins {
+  id "net.wooga.plugins-local" version "3.2.0"
+}
+```
 
 ### Testing/Development
 
@@ -86,7 +118,7 @@ Development
 LICENSE
 =======
 
-Copyright 2017 Wooga GmbH
+Copyright 2017-2021 Wooga GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

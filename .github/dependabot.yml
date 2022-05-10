@@ -29,8 +29,5 @@ updates:
     versions:
     - 7.10.2
     - 8.1.0
-  - dependency-name: org.kt3k.gradle.plugin:coveralls-gradle-plugin
-    versions:
-    - 2.8.3
   registries:
   - maven-repository-wooga-jfrog-io-wooga-atlas-maven
