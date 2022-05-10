@@ -3,8 +3,6 @@ atlas-plugins
 
 ![Wooga Internal](https://img.shields.io/badge/wooga-internal-lightgray.svg?style=flat-square)
 [![Gradle Plugin ID](https://img.shields.io/badge/gradle-net.wooga.github-brightgreen.svg?style=flat-square)](https://plugins.gradle.org/plugin/net.wooga.plugins)
-[![Build Status](https://img.shields.io/travis/wooga/atlas-plugins/master.svg?style=flat-square)](https://travis-ci.org/wooga/atlas-plugins)
-[![Coveralls Status](https://img.shields.io/coveralls/wooga/atlas-plugins/master.svg?style=flat-square)](https://coveralls.io/github/wooga/atlas-plugins?branch=master)
 [![Apache 2.0](https://img.shields.io/badge/license-Apache%202-blue.svg?style=flat-square)](https://raw.githubusercontent.com/wooga/atlas-plugins/master/LICENSE)
 [![GitHub tag](https://img.shields.io/github/tag/wooga/atlas-plugins.svg?style=flat-square)]()
 [![GitHub release](https://img.shields.io/github/release/wooga/atlas-plugins.svg?style=flat-square)]()
