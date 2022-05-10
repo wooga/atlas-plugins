@@ -1,8 +1,6 @@
 package wooga.gradle.plugins
 
-
 import nebula.test.ProjectSpec
-import org.ajoberstar.grgit.Grgit
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Task
@@ -21,8 +19,6 @@ import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.gradle.testing.jacoco.tasks.JacocoReport
-import org.kt3k.gradle.plugin.CoverallsPlugin
-import org.kt3k.gradle.plugin.coveralls.CoverallsTask
 import org.sonarqube.gradle.SonarQubeExtension
 import org.sonarqube.gradle.SonarQubePlugin
 import org.sonarqube.gradle.SonarQubeTask
@@ -52,7 +48,6 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         "jacoco"             | JacocoPlugin
         "maven-publish"      | MavenPublishPlugin
         "java-gradle-plugin" | JavaGradlePluginPlugin
-        "coveralls"          | CoverallsPlugin
         "sonarqube"          | SonarQubePlugin
     }
 
@@ -74,7 +69,6 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         LocalPluginsPlugin.INTEGRATION_TEST_TASK_NAME    | Test
         LocalPluginsPlugin.PUBLISH_GROOVY_DOCS_TASK_NAME | Sync
         SonarQubeConfiguration.TASK_NAME                 | SonarQubeTask
-        LocalPluginsPlugin.COVERALLS_TASK_NAME           | CoverallsTask
         LifecycleBasePlugin.CHECK_TASK_NAME              | Task
         LifecycleBasePlugin.ASSEMBLE_TASK_NAME           | Task
     }
