@@ -20,4 +20,4 @@ pluginManagement {
   }
 }
 
-rootProject.name = 'atlas-plugins'
+rootProject.name = 'plugins'
