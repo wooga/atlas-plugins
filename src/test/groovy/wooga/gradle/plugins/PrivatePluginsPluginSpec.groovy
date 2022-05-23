@@ -29,7 +29,6 @@ class PrivatePluginsPluginSpec extends LocalPluginsPluginSpec {
     def setup() {
         git = Grgit.init(dir: projectDir)
         git.commit(message: 'initial commit')
-        git.tag.add(name: "v0.0.1")
     }
 
     @Unroll("applies plugin #pluginName")
@@ -134,13 +133,27 @@ class PrivatePluginsPluginSpec extends LocalPluginsPluginSpec {
         versionExt.versionCodeScheme.get() == VersionCodeScheme.releaseCountBasic
     }
 
-    def "configures release notes plugin"() {
-        given: "project with plugins plugin applied"
+    def "configures release notes plugin on project with already published version"() {
+        given: "published version tag"
+        git.tag.add(name: "v0.0.1")
+        and: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
 
         expect:
         def releaseNotesTask = project.tasks.getByName(PrivatePluginsPlugin.RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes
         releaseNotesTask.from.get() == "v0.0.1"
+        releaseNotesTask.branch.get() == git.branch.current().name
+        releaseNotesTask.output.asFile.get() == new File(project.buildDir, "outputs/release-notes.md")
+        releaseNotesTask.strategy.get() instanceof ReleaseNotesStrategy
+    }
+
+    def "configures release notes plugin on project without published version"() {
+        given: "project with plugins plugin applied"
+        project.plugins.apply(PLUGIN_NAME)
+
+        expect:
+        def releaseNotesTask = project.tasks.getByName(PrivatePluginsPlugin.RELEASE_NOTES_TASK_NAME) as GenerateReleaseNotes
+        releaseNotesTask.from.orNull == null
         releaseNotesTask.branch.get() == git.branch.current().name
         releaseNotesTask.output.asFile.get() == new File(project.buildDir, "outputs/release-notes.md")
         releaseNotesTask.strategy.get() instanceof ReleaseNotesStrategy
