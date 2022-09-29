@@ -101,3 +101,4 @@ dependencies {
     }
     testImplementation 'com.wooga.spock.extensions:spock-github-extension:0.3.0'
 }
+
