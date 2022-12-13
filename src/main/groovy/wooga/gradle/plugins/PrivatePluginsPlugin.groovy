@@ -104,7 +104,9 @@ class PrivatePluginsPlugin implements Plugin<Project> {
         sonarExt.properties(sonarConfig.generateSonarProperties(githubExt.repositoryName,
                                                                 githubExt.branchName, javaConvention))
         project.rootProject.tasks.named(SonarQubeConfiguration.TASK_NAME) {sonarTask ->
-            sonarTask.onlyIf { System.getenv('CI') }
+            sonarTask.onlyIf {
+                System.getenv('CI')
+            }
         }
     }
 

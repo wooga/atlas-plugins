@@ -261,9 +261,9 @@ class PluginsPluginIntegrationSpec extends IntegrationSpec {
     def "task :#taskToRun #message with System.getenv('#env') #value"() {
         given:
         environmentVariables.set(env, value)
-        environmentVariables
 
         when:
+        fork = false
         def result = runTasks(taskToRun)
 
         then:

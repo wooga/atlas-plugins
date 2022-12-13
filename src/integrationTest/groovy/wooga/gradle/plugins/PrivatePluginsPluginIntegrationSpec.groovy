@@ -21,9 +21,6 @@ import com.wooga.spock.extensions.github.Repository
 import com.wooga.spock.extensions.github.api.RateLimitHandlerWait
 import com.wooga.spock.extensions.github.api.TravisBuildNumberPostFix
 import org.ajoberstar.grgit.Grgit
-import org.junit.Rule
-import org.junit.contrib.java.lang.system.EnvironmentVariables
-import spock.lang.IgnoreIf
 import spock.lang.Shared
 import spock.lang.Unroll
 

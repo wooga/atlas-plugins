@@ -188,7 +188,7 @@ class ReleaseNotesStrategySpec extends Specification {
         def result = strategy.render(changes)
         println(result)
         then:
-        def expectedResult = """
+        def expectedResult = normalizeMultiline("""
         ## Changes
     
         * ![ADD] new test feature [#2](https://github.com/test/issue/2) [@TestUser](https://github.com/TestUser)
@@ -201,7 +201,7 @@ class ReleaseNotesStrategySpec extends Specification {
         [ADD]: https://resources.atlas.wooga.com/icons/icon_add.svg
         [FIX]: https://resources.atlas.wooga.com/icons/icon_fix.svg
         [IMPROVE]: https://resources.atlas.wooga.com/icons/icon_improve.svg
-		""".stripIndent().trim().normalize()
+		""")
         def res = result.stripIndent().trim().normalize()
         res == expectedResult
     }
@@ -227,5 +227,12 @@ class ReleaseNotesStrategySpec extends Specification {
 		* [#1](https://github.com/test/issue/1): Add custom test feature [@TestUser](https://github.com/TestUser)
 		 
 		""".stripIndent().trim()
+    }
+
+    def normalizeMultiline(String str) {
+        return str.trim().stripIndent().normalize()
+                .readLines()
+                .collect{it.stripIndent().trim().normalize()}
+                .join("\n")
     }
 }
