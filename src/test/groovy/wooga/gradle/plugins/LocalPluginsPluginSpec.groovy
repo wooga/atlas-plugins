@@ -4,6 +4,7 @@ import nebula.test.ProjectSpec
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Task
+import org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestFramework
 import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.JavaPluginConvention
@@ -110,6 +111,20 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         expect:
         integrationTestTask.testClassesDirs == integrationTestSourceset.output.classesDirs
         integrationTestTask.classpath == integrationTestSourceset.runtimeClasspath
+        integrationTestTask.testFramework instanceof JUnitPlatformTestFramework
+    }
+
+    def "configures all test tasks with junit"() {
+        given: "project with plugins plugin applied"
+        project.plugins.apply(PLUGIN_NAME)
+
+        when:
+        def testTasks = project.tasks.withType(Test)
+
+        then:
+        testTasks.every { testTask ->
+            testTask.testFramework instanceof JUnitPlatformTestFramework
+        }
     }
 
     def "configures integration test source set"() {
@@ -214,7 +229,6 @@ class LocalPluginsPluginSpec extends ProjectSpec {
     }
 
 
-
     @Unroll("configures sonarqube extension with project property #propertyName if provided")
     def "configures sonarqube extension with project property values if provided"(String propertyName, String value) {
         given: "project with set sonar properties"
@@ -302,8 +316,8 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         where:
         scope                | dependencyString                        | version
         "implementation"     | "commons-io:commons-io"                 | "[2.7,3)"
-        "testImplementation" | "junit:junit"                           | "[4.13.1,5)"
-        "testImplementation" | "org.spockframework:spock-core"         | "1.3-groovy-2.5"
+        "testImplementation" | "org.spockframework:spock-junit4"       | "2.2-groovy-2.5"
+        "testImplementation" | "org.spockframework:spock-core"         | "2.2-groovy-2.5"
         "testImplementation" | "com.netflix.nebula:nebula-test"        | "[8,9)"
         "testImplementation" | "com.github.stefanbirkner:system-rules" | "[1,2)"
     }

@@ -16,6 +16,7 @@
 
 package wooga.gradle.plugins
 
+import nebula.test.functional.ExecutionResult
 import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
 import spock.lang.IgnoreIf
@@ -182,9 +183,8 @@ class LocalPluginsPluginIntegrationSpec extends IntegrationSpec {
     def "task :#taskToRun #message with System.getenv('#env') #value"() {
         given:
         environmentVariables.set(env, value)
-        environmentVariables
-
         when:
+        fork = false
         def result = runTasks(taskToRun)
 
         then:
