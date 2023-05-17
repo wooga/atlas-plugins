@@ -173,7 +173,7 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         project.plugins.apply(PLUGIN_NAME)
 
         expect:
-        def integrationTestCompileConfiguration = project.configurations.getByName("integrationTestCompile")
+        def integrationTestCompileConfiguration = project.configurations.getByName("integrationTestCompileClasspath")
         def ideaModel = project.extensions.getByType(IdeaModel.class)
         ideaModel.module.testSourceDirs.contains(new File(projectDir, "src/integrationTest/groovy"))
         ideaModel.module.scopes["TEST"]["plus"].contains(integrationTestCompileConfiguration)
@@ -269,19 +269,18 @@ class LocalPluginsPluginSpec extends ProjectSpec {
 
         expect:
         def localGroovyVersion = new DefaultArtifactVersion(GroovySystem.getVersion())
-        def localGroovy = localGroovyVersion >= new DefaultArtifactVersion("2.5.14") ? GroovySystem.getVersion() : "2.5.14"
-        project.configurations.every {
+        def localGroovy = localGroovyVersion >= new DefaultArtifactVersion(minimumGroovyVersion) ? GroovySystem.getVersion() : minimumGroovyVersion
+        project.configurations.each {
             //we turn the list of force modules to string to not test against gradle internals
             def forcedModules = it.resolutionStrategy.forcedModules.toList().collect { it.toString() }
-            forcedModules.containsAll([
-                    "org.codehaus.groovy:groovy-all:${localGroovy}".toString(),
-                    "org.codehaus.groovy:groovy-macro:${localGroovy}".toString(),
-                    "org.codehaus.groovy:groovy-nio:${localGroovy}".toString(),
-                    "org.codehaus.groovy:groovy-sql:${localGroovy}".toString(),
-                    "org.codehaus.groovy:groovy-xml:${localGroovy}".toString()
-            ]
-            )
+            assert forcedModules.contains("org.codehaus.groovy:groovy-all:${localGroovy}".toString())
+            assert forcedModules.contains("org.codehaus.groovy:groovy-macro:${localGroovy}".toString())
+            assert forcedModules.contains("org.codehaus.groovy:groovy-nio:${localGroovy}".toString())
+            assert forcedModules.contains("org.codehaus.groovy:groovy-xml:${localGroovy}".toString())
+            assert forcedModules.contains("org.codehaus.groovy:groovy-sql:${localGroovy}".toString())
         }
+        where:
+        minimumGroovyVersion = "3.0.17"
     }
 
     @Unroll("setups #repoName as repository")
@@ -312,12 +311,10 @@ class LocalPluginsPluginSpec extends ProjectSpec {
         dependency.version == version
 
         where:
-        scope                | dependencyString                        | version
-        "implementation"     | "commons-io:commons-io"                 | "[2.7,3)"
-        "testImplementation" | "org.spockframework:spock-junit4"       | "2.2-groovy-2.5"
-        "testImplementation" | "org.spockframework:spock-core"         | "2.2-groovy-2.5"
-        "testImplementation" | "com.netflix.nebula:nebula-test"        | "[8,9)"
-        "testImplementation" | "com.github.stefanbirkner:system-rules" | "[1,2)"
+        scope                | dependencyString                  | version
+        "testImplementation" | "org.spockframework:spock-junit4" | "2.3-groovy-3.0"
+        "testImplementation" | "org.spockframework:spock-core"   | "2.3-groovy-3.0"
+        "testImplementation" | "com.netflix.nebula:nebula-test"  | "[10,11)"
     }
 
     def "setups gradleAPI as API dependency"() {

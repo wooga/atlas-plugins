@@ -196,13 +196,13 @@ class PluginsPluginSpec extends ProjectSpec {
         project.plugins.apply(PLUGIN_NAME)
 
         expect:
-        def integrationTestCompileConfiguration = project.configurations.getByName("integrationTestCompile")
+        def integrationTestCompileConfiguration = project.configurations.getByName("integrationTestCompileClasspath")
         def ideaModel = project.extensions.getByType(IdeaModel.class)
         ideaModel.module.testSourceDirs.contains(new File(projectDir, "src/integrationTest/groovy"))
         ideaModel.module.scopes["TEST"]["plus"].contains(integrationTestCompileConfiguration)
     }
 
-    def "configures sonarqube extension with default property values if none provided"(String ghCompany, String ghRepoName, String expectedProjectKey) {
+    def "configures sonarqube extension with default property values if none provided"() {
         given: "configured github plugin"
         if (!ghCompany.empty && !ghRepoName.empty) {
             project.ext["github.repositoryName"] = "${ghCompany}/${ghRepoName}"
@@ -324,7 +324,7 @@ class PluginsPluginSpec extends ProjectSpec {
 
         expect:
         def localGroovyVersion = new DefaultArtifactVersion(GroovySystem.getVersion())
-        def localGroovy = localGroovyVersion >= new DefaultArtifactVersion("2.5.14") ? GroovySystem.getVersion() : "2.5.14"
+        def localGroovy = localGroovyVersion >= new DefaultArtifactVersion("3.0.17") ? GroovySystem.getVersion() : "3.0.17"
         project.configurations.every {
             //we turn the list of force modules to string to not test against gradle internals
             def forcedModules = it.resolutionStrategy.forcedModules.toList().collect { it.toString() }

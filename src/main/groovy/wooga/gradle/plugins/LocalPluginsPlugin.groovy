@@ -61,7 +61,7 @@ class LocalPluginsPlugin implements Plugin<Project> {
         Task testTask = project.tasks.getByName(JavaPlugin.TEST_TASK_NAME)
         project.tasks.withType(Test).configureEach { Test test -> test.useJUnitPlatform() }
 
-        configureSourceCompatibility(project)
+        configureSourceCompatibility(project, JavaVersion.VERSION_1_8)
         configureGroovyDocsTask(project)
         configureJacocoTestReport(project, integrationTestTask, testTask)
         configureSonarQubeExtension(project, SonarQubeConfiguration.withEnvVarPropertyFallback(project))
@@ -69,7 +69,7 @@ class LocalPluginsPlugin implements Plugin<Project> {
 
         setupRepositories(project)
         setupDependencies(project)
-        forceGroovyVersion(project, "2.5.14")
+        forceGroovyVersion(project, "3.0.17")
 
         project.publishing {
             publications {
@@ -90,15 +90,14 @@ class LocalPluginsPlugin implements Plugin<Project> {
         JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
         DependencyHandler dependencies = project.getDependencies();
         dependencies.add("api", dependencies.gradleApi())
-        dependencies.add("implementation", 'commons-io:commons-io:[2.7,3)')
-        dependencies.add("testImplementation", 'org.spockframework:spock-core:2.2-groovy-2.5', {
+        dependencies.add("testImplementation", 'org.spockframework:spock-core:2.3-groovy-3.0', {
             exclude module: 'groovy-all'
         })
-        dependencies.add("testImplementation", 'org.spockframework:spock-junit4:2.2-groovy-2.5', {
+        dependencies.add("testImplementation", 'org.spockframework:spock-junit4:2.3-groovy-3.0', {
             exclude module: 'groovy-all'
         })
-        dependencies.add("testImplementation", 'com.netflix.nebula:nebula-test:[8,9)')
-        dependencies.add("testImplementation", 'com.github.stefanbirkner:system-rules:[1,2)')
+//      nebula-test is compatible with groovy 3/spock 2/gradle 7 from 10.0+
+        dependencies.add("testImplementation", 'com.netflix.nebula:nebula-test:[10,11)')
         dependencies.add("integrationTestImplementation", javaConvention.sourceSets.getByName("test").output)
     }
 
@@ -171,7 +170,7 @@ class LocalPluginsPlugin implements Plugin<Project> {
 
         def integrationTestSourceSet = setupIntegrationTestSourceSet(project, javaConvention)
         setupIntegrationTestConfiguration(project, javaConvention)
-        setupIntegrationTestIdeaModule(project)
+        setupIntegrationTestIdeaModule(project, integrationTestSourceSet)
 
         Test integrationTestTask = tasks.create(name: INTEGRATION_TEST_TASK_NAME, type: Test) as Test
 
@@ -190,10 +189,10 @@ class LocalPluginsPlugin implements Plugin<Project> {
         integrationTestTask
     }
 
-    private static setupIntegrationTestIdeaModule(final Project project) {
+    private static setupIntegrationTestIdeaModule(final Project project, SourceSet integrationSourceSet) {
         def ideaModel = project.extensions.getByType(IdeaModel.class)
         ideaModel.module.testSourceDirs += project.file(INTEGRATION_TEST_SOURCE)
-        ideaModel.module.scopes["TEST"]["plus"] += [project.configurations.getByName("integrationTestCompile")]
+        ideaModel.module.scopes["TEST"]["plus"] += [project.configurations.getByName(integrationSourceSet.compileClasspathConfigurationName)]
     }
 
     private static void setupIntegrationTestConfiguration(Project project, final JavaPluginConvention javaConvention) {
@@ -224,11 +223,16 @@ class LocalPluginsPlugin implements Plugin<Project> {
         sourceSet
     }
 
-    private static void forceGroovyVersion(Project project, String version) {
+    static void configureSourceCompatibility(Project project, JavaVersion javaVersion) {
+        JavaPluginExtension javaExtension = project.extensions.getByType(JavaPluginExtension)
+        javaExtension.sourceCompatibility = javaVersion
+    }
+
+    private static void forceGroovyVersion(Project project, String minimumVersion) {
         project.configurations.all({ Configuration configuration ->
             configuration.resolutionStrategy({ ResolutionStrategy strategy ->
                 def localGroovyVersion = new DefaultArtifactVersion(GroovySystem.getVersion())
-                def localGroovy = localGroovyVersion >= new DefaultArtifactVersion(version) ? GroovySystem.getVersion() : version
+                def localGroovy = localGroovyVersion >= new DefaultArtifactVersion(minimumVersion) ? GroovySystem.getVersion() : minimumVersion
                 strategy.force("org.codehaus.groovy:groovy-all:${localGroovy}")
                 strategy.force("org.codehaus.groovy:groovy-macro:${localGroovy}")
                 strategy.force("org.codehaus.groovy:groovy-nio:${localGroovy}")
@@ -236,11 +240,6 @@ class LocalPluginsPlugin implements Plugin<Project> {
                 strategy.force("org.codehaus.groovy:groovy-xml:${localGroovy}")
             })
         })
-    }
-
-    static void configureSourceCompatibility(Project project) {
-        JavaPluginExtension javaExtension = project.extensions.getByType(JavaPluginExtension)
-        javaExtension.sourceCompatibility = JavaVersion.VERSION_1_8
     }
 
     private static AutogeneratedGroovyFile generateSpockConfigFile(Project project,
