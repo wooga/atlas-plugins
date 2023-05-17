@@ -210,7 +210,6 @@ class LocalPluginsPluginSpec extends ProjectSpec {
 
         and: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
-        project.evaluate()
 
         expect:
         def sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME) as SonarQubeTask
@@ -236,7 +235,6 @@ class LocalPluginsPluginSpec extends ProjectSpec {
 
         and: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
-        project.evaluate()
 
         expect:
         SonarQubeTask sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME) as SonarQubeTask
