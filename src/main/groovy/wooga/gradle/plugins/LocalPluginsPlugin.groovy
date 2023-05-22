@@ -19,6 +19,7 @@ import org.gradle.api.reporting.ReportingExtension
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskContainer
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -52,10 +53,10 @@ class LocalPluginsPlugin implements Plugin<Project> {
             apply(SonarQubeConfiguration.PLUGIN_CLASS)
         }
 
-        generateSpockConfigFile(project, """unroll {defaultPattern '#featureName[#iterationIndex]'}""")
+//        generateSpockConfigFile(project, """//unroll {defaultPattern '#featureName[#iterationIndex]'}""")
 
         def integrationTestTask = setupIntegrationTestTask(project, project.tasks)
-        def testTask = project.tasks.getByName(JavaPlugin.TEST_TASK_NAME)
+        def testTask = project.tasks.named(JavaPlugin.TEST_TASK_NAME, Test)
         project.tasks.withType(Test).configureEach { Test test -> test.useJUnitPlatform() }
 
         configureSourceCompatibility(project, JavaVersion.VERSION_1_8)
@@ -100,8 +101,9 @@ class LocalPluginsPlugin implements Plugin<Project> {
 
     private static void configureGroovyDocsTask(final Project project) {
         TaskContainer tasks = project.tasks
-        Groovydoc groovyDocTask = tasks.getByName(GroovyPlugin.GROOVYDOC_TASK_NAME) as Groovydoc
-        tasks.withType(Groovydoc, { Groovydoc task ->
+        def groovyDocTask = tasks.named(GroovyPlugin.GROOVYDOC_TASK_NAME, Groovydoc)
+
+        tasks.withType(Groovydoc).configureEach { Groovydoc task ->
             if (task.name == GroovyPlugin.GROOVYDOC_TASK_NAME) {
                 GradlePluginDevelopmentExtension extension = project.getExtensions().getByType(GradlePluginDevelopmentExtension)
                 Callable<String> docTitle = {
@@ -118,22 +120,24 @@ class LocalPluginsPlugin implements Plugin<Project> {
                 conventionMapping.noVersionStamp = { true }
                 conventionMapping.noTimestamp = { true }
             }
-        })
+        }
 
-        Sync publishGroovydocTask = tasks.create(PUBLISH_GROOVY_DOCS_TASK_NAME, Sync)
-        publishGroovydocTask.description = "Publish groovy docs to output directory ${DOC_EXPORT_DIR}"
-        publishGroovydocTask.group = PublishingPlugin.PUBLISH_TASK_GROUP
-        publishGroovydocTask.from(groovyDocTask.outputs.files)
-        publishGroovydocTask.destinationDir = project.file(DOC_EXPORT_DIR)
+        def publishGroovydocTask = tasks.register(PUBLISH_GROOVY_DOCS_TASK_NAME, Sync) {
+            it.description = "Publish groovy docs to output directory ${DOC_EXPORT_DIR}"
+            it.group = PublishingPlugin.PUBLISH_TASK_GROUP
+            it.from(groovyDocTask.map{it.outputs.files })
+            it.destinationDir = project.file(DOC_EXPORT_DIR)
+        }
 
-        def publishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
-        publishTask.dependsOn(publishGroovydocTask)
+        tasks.named(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME) {
+            it.dependsOn(publishGroovydocTask)
+        }
     }
 
     private static configureSonarQubeExtension(final Project project, SonarQubeConfiguration sonarConfig) {
         SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
 
-        JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
+        def javaConvention = project.extensions.findByType(JavaPluginExtension)
 
         sonarExt.properties(sonarConfig.generateSonarProperties(
                 project.provider{ project.name },
@@ -143,47 +147,50 @@ class LocalPluginsPlugin implements Plugin<Project> {
         sonarTask.onlyIf { System.getenv('CI') }
     }
 
-    private static configureJacocoTestReport(final Project project, final Task integrationTestTask, Task testTask) {
+    private static configureJacocoTestReport(final Project project,
+                                             TaskProvider<? extends Task> integrationTestTask,
+                                             TaskProvider<? extends Task> testTask) {
         project.tasks.withType(JacocoReport).configureEach { JacocoReport jacocoReport ->
             if (jacocoReport.name == "jacoco" + JavaPlugin.TEST_TASK_NAME.capitalize() + "Report") {
                 jacocoReport.reports{ JacocoReportsContainer configurableReports ->
                     configurableReports.xml.enabled = true
                     configurableReports.html.enabled = true
                 }
-                jacocoReport.executionData(integrationTestTask, testTask)
+                jacocoReport.executionData(integrationTestTask.get(), testTask.get())
             }
         }
     }
 
     private static void configureTestReportOutput(final Project project) {
         def reporting = project.extensions.getByName(ReportingExtension.NAME) as ReportingExtension
-        project.tasks.withType(Test) { task ->
+        project.tasks.withType(Test).configureEach { task ->
             task.reports.html.setDestination(project.file("${reporting.baseDir}/${task.name}"))
         }
     }
 
-    private static Test setupIntegrationTestTask(final Project project, final TaskContainer tasks) {
-        JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
+    private static TaskProvider<Test> setupIntegrationTestTask(final Project project, final TaskContainer tasks) {
+        def javaConvention = project.extensions.findByType(JavaPluginExtension)
 
         def integrationTestSourceSet = setupIntegrationTestSourceSet(project, javaConvention)
         setupIntegrationTestConfiguration(project, javaConvention)
         setupIntegrationTestIdeaModule(project, integrationTestSourceSet)
 
-        Test integrationTestTask = tasks.create(name: INTEGRATION_TEST_TASK_NAME, type: Test) as Test
-
-        integrationTestTask.with {
-            setTestClassesDirs(integrationTestSourceSet.output.classesDirs)
-            classpath = integrationTestSourceSet.runtimeClasspath
-            outputs.upToDateWhen { false }
+        def integrationTestTask = tasks.register(INTEGRATION_TEST_TASK_NAME, Test)
+        def testTask = tasks.named(JavaPlugin.TEST_TASK_NAME)
+        integrationTestTask.configure {
+            it.with {
+                setTestClassesDirs(integrationTestSourceSet.output.classesDirs)
+                classpath = integrationTestSourceSet.runtimeClasspath
+                outputs.upToDateWhen { false }
+            }
+            it.mustRunAfter testTask
+        }
+        tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME).configure {
+            it.dependsOn integrationTestTask
         }
 
-        def checkLifeCycleTask = tasks.getByName(LifecycleBasePlugin.CHECK_TASK_NAME)
-        checkLifeCycleTask.dependsOn integrationTestTask
 
-        def testTask = tasks.getByName(JavaPlugin.TEST_TASK_NAME)
-        integrationTestTask.mustRunAfter testTask
-
-        integrationTestTask
+        return integrationTestTask
     }
 
     private static setupIntegrationTestIdeaModule(final Project project, SourceSet integrationSourceSet) {
@@ -192,9 +199,9 @@ class LocalPluginsPlugin implements Plugin<Project> {
         ideaModel.module.scopes["TEST"]["plus"] += [project.configurations.getByName(integrationSourceSet.compileClasspathConfigurationName)]
     }
 
-    private static void setupIntegrationTestConfiguration(Project project, final JavaPluginConvention javaConvention) {
-        def test = javaConvention.sourceSets.getByName("test")
-        def integrationTest = javaConvention.sourceSets.getByName("integrationTest")
+    private static void setupIntegrationTestConfiguration(Project project, final JavaPluginExtension javaExt) {
+        def test = javaExt.sourceSets.getByName("test")
+        def integrationTest = javaExt.sourceSets.getByName("integrationTest")
 
         def configurations = project.configurations
         def testImplementation = configurations.getByName(test.implementationConfigurationName)
@@ -207,11 +214,11 @@ class LocalPluginsPlugin implements Plugin<Project> {
         integrationTestRuntimeOnly.extendsFrom(testRuntimeOnly)
     }
 
-    private static SourceSet setupIntegrationTestSourceSet(final Project project, final JavaPluginConvention javaConvention) {
-        def main = javaConvention.sourceSets.getByName("main")
-        def test = javaConvention.sourceSets.getByName("test")
+    private static SourceSet setupIntegrationTestSourceSet(final Project project, final JavaPluginExtension javaExt) {
+        def main = javaExt.sourceSets.getByName("main")
+        def test = javaExt.sourceSets.getByName("test")
 
-        SourceSet sourceSet = javaConvention.sourceSets.maybeCreate("integrationTest")
+        SourceSet sourceSet = javaExt.sourceSets.maybeCreate("integrationTest")
         sourceSet.setCompileClasspath(project.files(main.compileClasspath, test.compileClasspath, sourceSet.compileClasspath))
         sourceSet.setRuntimeClasspath(project.files(main.compileClasspath, test.compileClasspath, sourceSet.runtimeClasspath))
 
