@@ -41,5 +41,5 @@ withCredentials([usernamePassword(credentialsId: 'github_integration', passwordV
     ]
 
 
-    buildGradlePlugin plaforms: ['macos','windows','linux'], sonarToken: sonar_token, testEnvironment: testEnvironment
+    buildGradlePlugin platforms: ['macos','windows','linux'], sonarToken: sonar_token, testEnvironment: testEnvironment
 }
