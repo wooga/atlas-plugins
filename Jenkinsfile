@@ -40,6 +40,5 @@ withCredentials([usernamePassword(credentialsId: 'github_integration', passwordV
         ]
     ]
 
-
     buildGradlePlugin platforms: ['macos','windows','linux'], sonarToken: sonar_token, testEnvironment: testEnvironment
 }
