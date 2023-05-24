@@ -324,11 +324,12 @@ class PluginsPluginSpec extends ProjectSpec {
 
         expect:
         def localGroovyVersion = new DefaultArtifactVersion(GroovySystem.getVersion())
-        def localGroovy = localGroovyVersion >= new DefaultArtifactVersion("3.0.17") ? GroovySystem.getVersion() : "3.0.17"
+        def localGroovy = localGroovyVersion >= new DefaultArtifactVersion("3.0.13") ? GroovySystem.getVersion() : "3.0.13"
         project.configurations.every {
             //we turn the list of force modules to string to not test against gradle internals
             def forcedModules = it.resolutionStrategy.forcedModules.toList().collect { it.toString() }
             forcedModules.containsAll([
+                    "org.codehaus.groovy:groovy:${localGroovy}".toString(),
                     "org.codehaus.groovy:groovy-all:${localGroovy}".toString(),
                     "org.codehaus.groovy:groovy-macro:${localGroovy}".toString(),
                     "org.codehaus.groovy:groovy-nio:${localGroovy}".toString(),

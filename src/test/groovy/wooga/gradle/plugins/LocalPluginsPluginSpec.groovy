@@ -280,7 +280,7 @@ class LocalPluginsPluginSpec extends ProjectSpec {
             assert forcedModules.contains("org.codehaus.groovy:groovy-sql:${localGroovy}".toString())
         }
         where:
-        minimumGroovyVersion = "3.0.17"
+        minimumGroovyVersion = "3.0.13"
     }
 
     @Unroll("setups #repoName as repository")

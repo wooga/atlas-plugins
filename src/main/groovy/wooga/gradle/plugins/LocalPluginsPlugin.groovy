@@ -10,7 +10,6 @@ import org.gradle.api.artifacts.ResolutionStrategy
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPlugin
-import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
@@ -53,7 +52,7 @@ class LocalPluginsPlugin implements Plugin<Project> {
             apply(SonarQubeConfiguration.PLUGIN_CLASS)
         }
 
-//        generateSpockConfigFile(project, """//unroll {defaultPattern '#featureName[#iterationIndex]'}""")
+
 
         def integrationTestTask = setupIntegrationTestTask(project, project.tasks)
         def testTask = project.tasks.named(JavaPlugin.TEST_TASK_NAME, Test)
@@ -67,8 +66,8 @@ class LocalPluginsPlugin implements Plugin<Project> {
 
         setupRepositories(project)
         setupDependencies(project)
-        forceGroovyVersion(project, "3.0.17")
-
+        forceGroovyVersion(project, "3.0.13")
+        generateSpockConfigFile(project, """unroll {defaultPattern '#featureName[#iterationIndex]'}""")
         project.publishing {
             publications {
                 mavenJava(MavenPublication) {
@@ -89,10 +88,10 @@ class LocalPluginsPlugin implements Plugin<Project> {
         DependencyHandler dependencies = project.getDependencies();
         dependencies.add("api", dependencies.gradleApi())
         dependencies.add("testImplementation", 'org.spockframework:spock-core:2.3-groovy-3.0', {
-            exclude module: 'groovy-all'
+            exclude group: "org.codehaus.groovy"
         })
         dependencies.add("testImplementation", 'org.spockframework:spock-junit4:2.3-groovy-3.0', {
-            exclude module: 'groovy-all'
+            exclude group: "org.codehaus.groovy"
         })
 //      nebula-test is compatible with groovy 3/spock 2/gradle 7 from 10.0+
         dependencies.add("testImplementation", 'com.netflix.nebula:nebula-test:[10,11)')
@@ -237,6 +236,7 @@ class LocalPluginsPlugin implements Plugin<Project> {
             configuration.resolutionStrategy({ ResolutionStrategy strategy ->
                 def localGroovyVersion = new DefaultArtifactVersion(GroovySystem.getVersion())
                 def localGroovy = localGroovyVersion >= new DefaultArtifactVersion(minimumVersion) ? GroovySystem.getVersion() : minimumVersion
+                strategy.force("org.codehaus.groovy:groovy:${localGroovy}")
                 strategy.force("org.codehaus.groovy:groovy-all:${localGroovy}")
                 strategy.force("org.codehaus.groovy:groovy-macro:${localGroovy}")
                 strategy.force("org.codehaus.groovy:groovy-nio:${localGroovy}")
