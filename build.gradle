@@ -87,19 +87,18 @@ repositories {
 dependencies {
     implementation 'com.wooga.gradle:gradle-commons:[1,2['
     implementation 'net.wooga.gradle:github:[3,4['
-    implementation 'net.wooga.gradle:github-release-notes:[2,3['
+    implementation ('net.wooga.gradle:github-release-notes:[2,3[', {
+        exclude group: "org.codehaus.groovy"
+    })
     implementation 'net.wooga.gradle:version:[2,3['
     implementation 'com.gradle.publish:plugin-publish-plugin:0.14.0'
     implementation 'org.ajoberstar.grgit:grgit-gradle:[4.1.1,5['
     implementation 'org.ajoberstar.grgit:grgit-core:[4.1.1,5['
     implementation 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.0'
     implementation 'org.apache.maven:maven-artifact:[3,4['
-    testImplementation('com.netflix.nebula:nebula-test:[8,9)') {
-        version {
-            strictly '8.1.0'
-        }
-    }
     testImplementation 'com.github.stefanbirkner:system-rules:[1,2)'
-    testImplementation 'com.wooga.spock.extensions:spock-github-extension:0.3.0'
+    testImplementation ('com.wooga.spock.extensions:spock-github-extension:0.3.0', {
+        exclude group: "org.codehaus.groovy"
+    })
 }
 
