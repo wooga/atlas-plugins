@@ -196,13 +196,13 @@ class PluginsPluginSpec extends ProjectSpec {
         project.plugins.apply(PLUGIN_NAME)
 
         expect:
-        def integrationTestCompileConfiguration = project.configurations.getByName("integrationTestCompile")
+        def integrationTestCompileConfiguration = project.configurations.getByName("integrationTestCompileClasspath")
         def ideaModel = project.extensions.getByType(IdeaModel.class)
         ideaModel.module.testSourceDirs.contains(new File(projectDir, "src/integrationTest/groovy"))
         ideaModel.module.scopes["TEST"]["plus"].contains(integrationTestCompileConfiguration)
     }
 
-    def "configures sonarqube extension with default property values if none provided"(String ghCompany, String ghRepoName, String expectedProjectKey) {
+    def "configures sonarqube extension with default property values if none provided"() {
         given: "configured github plugin"
         if (!ghCompany.empty && !ghRepoName.empty) {
             project.ext["github.repositoryName"] = "${ghCompany}/${ghRepoName}"
@@ -215,7 +215,6 @@ class PluginsPluginSpec extends ProjectSpec {
 
         and: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
-        project.evaluate()
 
         expect:
         SonarQubeTask sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME)
@@ -243,7 +242,6 @@ class PluginsPluginSpec extends ProjectSpec {
 
         and: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
-        project.evaluate()
 
         expect:
         SonarQubeTask sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME) as SonarQubeTask
@@ -263,7 +261,6 @@ class PluginsPluginSpec extends ProjectSpec {
     def "configure version extension with default values"() {
         given: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
-        project.evaluate()
 
         expect: "version extension to exist"
         VersionPluginExtension versionExt = project.extensions.getByType(VersionPluginExtension)
@@ -277,7 +274,6 @@ class PluginsPluginSpec extends ProjectSpec {
     def "override version extension default values with custom ones"() {
         given: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
-        project.evaluate()
 
         and: "existing version extension in the plugin"
         VersionPluginExtension versionExt = project.extensions.getByType(VersionPluginExtension)
@@ -294,7 +290,6 @@ class PluginsPluginSpec extends ProjectSpec {
     def "configures github publish task"() {
         given: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
-        project.evaluate()
 
         and: "switch current branch"
         getGit().checkout(branch: 'test_branch', createBranch: true, startPoint: getGit().resolve.toRevisionString(getGit().branch.current().fullName))
@@ -312,7 +307,6 @@ class PluginsPluginSpec extends ProjectSpec {
     def "configures github release notes task"() {
         given: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
-        project.evaluate()
 
         and: "switch current branch"
         getGit().checkout(branch: 'test_branch', createBranch: true, startPoint: getGit().resolve.toRevisionString(getGit().branch.current().fullName))
@@ -330,11 +324,12 @@ class PluginsPluginSpec extends ProjectSpec {
 
         expect:
         def localGroovyVersion = new DefaultArtifactVersion(GroovySystem.getVersion())
-        def localGroovy = localGroovyVersion >= new DefaultArtifactVersion("2.5.14") ? GroovySystem.getVersion() : "2.5.14"
+        def localGroovy = localGroovyVersion >= new DefaultArtifactVersion("3.0.13") ? GroovySystem.getVersion() : "3.0.13"
         project.configurations.every {
             //we turn the list of force modules to string to not test against gradle internals
             def forcedModules = it.resolutionStrategy.forcedModules.toList().collect { it.toString() }
             forcedModules.containsAll([
+                    "org.codehaus.groovy:groovy:${localGroovy}".toString(),
                     "org.codehaus.groovy:groovy-all:${localGroovy}".toString(),
                     "org.codehaus.groovy:groovy-macro:${localGroovy}".toString(),
                     "org.codehaus.groovy:groovy-nio:${localGroovy}".toString(),

@@ -4,6 +4,7 @@ import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.sonarqube.gradle.SonarQubeExtension
@@ -28,7 +29,7 @@ class SonarQubeConfiguration {
     Action<? extends SonarQubeProperties> generateSonarProperties(
             Provider<String> repositoryName,
             Provider<String> branchName,
-            JavaPluginConvention javaConvention) {
+            JavaPluginExtension javaExt) {
 
         def repoNameProvider = repositoryName.map { String fullRepoName ->
             fullRepoName.contains("/")? fullRepoName.split("/")[1] : fullRepoName
@@ -59,10 +60,10 @@ class SonarQubeConfiguration {
                 //plugin default is sourceSets.main.allJava.srcDirs (with only existing dirs)
                 property "sonar.sources",
                         propertyFactory.create("sonar.sources", "SONAR_SOURCES",
-                                srcDirMatching(javaConvention) { !it.name.toLowerCase().contains("test") }.join(","))
+                                srcDirMatching(javaExt) { !it.name.toLowerCase().contains("test") }.join(","))
                 property "sonar.tests",
                         propertyFactory.create("sonar.tests", "SONAR_TESTS",
-                                srcDirMatching(javaConvention) { it.name.toLowerCase().contains("test") }.join(","))
+                                srcDirMatching(javaExt) { it.name.toLowerCase().contains("test") }.join(","))
                 property "sonar.jacoco.reportPaths",
                         propertyFactory.create("sonar.jacoco.reportPaths", "SONAR_JACOCO_REPORT_PATHS",
                                 "build/jacoco/integrationTest.exec,build/jacoco/test.exec")
@@ -70,8 +71,8 @@ class SonarQubeConfiguration {
         }
     }
 
-    private static List<String> srcDirMatching(JavaPluginConvention javaConvention, Closure closure) {
-        return javaConvention.sourceSets.findAll(closure).
+    private static List<String> srcDirMatching(JavaPluginExtension javaExt, Closure closure) {
+        return javaExt.sourceSets.findAll(closure).
                 collect { SourceSet sourceSet ->
                     sourceSet.allJava.sourceDirectories.findAll { it.exists() }.collect { it.absolutePath }
                 }.flatten() as List<String>

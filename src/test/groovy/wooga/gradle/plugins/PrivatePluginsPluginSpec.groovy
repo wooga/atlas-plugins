@@ -106,7 +106,6 @@ class PrivatePluginsPluginSpec extends LocalPluginsPluginSpec {
     def "configure version plugin with default values"() {
         given: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
-        project.evaluate()
 
         expect: "version extension to exist"
         VersionPluginExtension versionExt = project.extensions.getByType(VersionPluginExtension)
@@ -120,7 +119,6 @@ class PrivatePluginsPluginSpec extends LocalPluginsPluginSpec {
     def "override version extension default values with custom ones"() {
         given: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
-        project.evaluate()
 
         and: "existing version extension in the plugin"
         VersionPluginExtension versionExt = project.extensions.getByType(VersionPluginExtension)
@@ -156,7 +154,6 @@ class PrivatePluginsPluginSpec extends LocalPluginsPluginSpec {
 
         and: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
-        project.evaluate()
 
         expect:
         def sonarTask = project.tasks.getByName(SonarQubeExtension.SONARQUBE_TASK_NAME) as SonarQubeTask
@@ -192,7 +189,6 @@ class PrivatePluginsPluginSpec extends LocalPluginsPluginSpec {
     def "configures github publish task"() {
         given: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
-        project.evaluate()
 
         and: "switch current branch"
         getGit().checkout(branch: 'test_branch', createBranch: true, startPoint: getGit().resolve.toRevisionString(getGit().branch.current().fullName))
@@ -211,7 +207,6 @@ class PrivatePluginsPluginSpec extends LocalPluginsPluginSpec {
     def "configures github release notes task"() {
         given: "project with plugins plugin applied"
         project.plugins.apply(PLUGIN_NAME)
-        project.evaluate()
 
         and: "switch current branch"
         getGit().checkout(branch: 'test_branch', createBranch: true, startPoint: getGit().resolve.toRevisionString(getGit().branch.current().fullName))
