@@ -5,7 +5,7 @@ import org.ajoberstar.grgit.gradle.GrgitPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.TaskContainer
@@ -98,8 +98,8 @@ class PrivatePluginsPlugin implements Plugin<Project> {
     private static configureSonarQube(final Project project,
                                       SonarQubeConfiguration sonarConfig) {
         def githubExt = project.extensions.getByType(GithubPluginExtension)
-        SonarQubeExtension sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
-        JavaPluginConvention javaConvention = project.getConvention().getPlugins().get("java") as JavaPluginConvention
+        def sonarExt = project.rootProject.extensions.getByType(SonarQubeExtension)
+        def javaConvention = project.extensions.findByType(JavaPluginExtension)
 
         sonarExt.properties(sonarConfig.generateSonarProperties(githubExt.repositoryName,
                                                                 githubExt.branchName, javaConvention))
