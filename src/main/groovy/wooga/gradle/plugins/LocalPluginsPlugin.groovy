@@ -87,6 +87,8 @@ class LocalPluginsPlugin implements Plugin<Project> {
         def javaExt = project.extensions.getByType(JavaPluginExtension)
         DependencyHandler dependencies = project.getDependencies();
         dependencies.add("api", dependencies.gradleApi())
+        dependencies.add("implementation", 'commons-io:commons-io:[2.7,3)')
+        dependencies.add("testImplementation", 'com.github.stefanbirkner:system-rules:[1,2)')
         dependencies.add("testImplementation", 'org.spockframework:spock-core:2.3-groovy-3.0', {
             exclude group: "org.codehaus.groovy"
         })
