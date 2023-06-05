@@ -8,13 +8,17 @@ import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolutionStrategy
 import org.gradle.api.artifacts.dsl.DependencyHandler
+import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.plugins.GroovyPlugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.provider.Provider
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.reporting.ReportingExtension
+import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskContainer
@@ -174,14 +178,14 @@ class LocalPluginsPlugin implements Plugin<Project> {
 
         def integrationTestSourceSet = setupIntegrationTestSourceSet(project, javaConvention)
         setupIntegrationTestConfiguration(project, javaConvention)
-        setupIntegrationTestIdeaModule(project, integrationTestSourceSet)
+        setupIntegrationTestIdeaModule(project, integrationTestSourceSet.get())
 
         def integrationTestTask = tasks.register(INTEGRATION_TEST_TASK_NAME, Test)
         def testTask = tasks.named(JavaPlugin.TEST_TASK_NAME)
         integrationTestTask.configure {
             it.with {
-                setTestClassesDirs(integrationTestSourceSet.output.classesDirs)
-                classpath = integrationTestSourceSet.runtimeClasspath
+                setTestClassesDirs(integrationTestSourceSet.get().output.classesDirs)
+                classpath = integrationTestSourceSet.get().runtimeClasspath
                 outputs.upToDateWhen { false }
             }
             it.mustRunAfter testTask
@@ -215,18 +219,28 @@ class LocalPluginsPlugin implements Plugin<Project> {
         integrationTestRuntimeOnly.extendsFrom(testRuntimeOnly)
     }
 
-    private static SourceSet setupIntegrationTestSourceSet(final Project project, final JavaPluginExtension javaExt) {
-        def main = javaExt.sourceSets.getByName("main")
-        def test = javaExt.sourceSets.getByName("test")
-
-        SourceSet sourceSet = javaExt.sourceSets.maybeCreate("integrationTest")
-        sourceSet.setCompileClasspath(project.files(main.compileClasspath, test.compileClasspath, sourceSet.compileClasspath))
-        sourceSet.setRuntimeClasspath(project.files(main.compileClasspath, test.compileClasspath, sourceSet.runtimeClasspath))
-
-        sourceSet.groovy.srcDir("src/" + sourceSet.getName() + "/groovy");
-        sourceSet.resources.srcDir("src/" + sourceSet.getName() + "/resources");
-        sourceSet
+    private static void addSrcDirIfNotExists(SourceDirectorySet dirSet, File toAdd) {
+        if(!dirSet.srcDirs.contains(toAdd)) {
+            dirSet.srcDir(toAdd)
+        }
     }
+
+    private static Provider<SourceSet> setupIntegrationTestSourceSet(final Project project, final JavaPluginExtension javaExt) {
+        def main = javaExt.sourceSets.named("main")
+        def test = javaExt.sourceSets.named("test")
+        def sourceSet = javaExt.sourceSets.register("integrationTest") {sourceSet ->
+            sourceSet.compileClasspath = project.files(main.get().compileClasspath, test.get().compileClasspath, sourceSet.compileClasspath)
+            sourceSet.runtimeClasspath = project.files(main.get().compileClasspath, test.get().compileClasspath, sourceSet.runtimeClasspath)
+            //duplicate avoidance needed due to gradle bug: https://github.com/gradle/gradle/issues/17236
+            addSrcDirIfNotExists(sourceSet.groovy as SourceDirectorySet,
+                    new File(project.projectDir, "src/" + sourceSet.getName() + "/groovy"))
+            addSrcDirIfNotExists(sourceSet.resources,
+                    new File(project.projectDir, "src/" + sourceSet.getName() + "/resources"))
+        }
+        return sourceSet
+    }
+
+
 
     static void configureSourceCompatibility(Project project, JavaVersion javaVersion) {
         JavaPluginExtension javaExtension = project.extensions.getByType(JavaPluginExtension)
