@@ -99,5 +99,5 @@ dependencies {
             strictly '8.1.0'
         }
     }
-    testImplementation 'com.wooga.spock.extensions:spock-github-extension:0.3.0'
+    testImplementation 'com.wooga.spock.extensions:spock-github-extension:0.4.0'
 }
