@@ -44,10 +44,10 @@ import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
 import wooga.gradle.githubReleaseNotes.tasks.GenerateReleaseNotes
-import wooga.gradle.version.VersionCodeScheme
+import wooga.gradle.version.VersionCodeSchemes
 import wooga.gradle.version.VersionPlugin
 import wooga.gradle.version.VersionPluginExtension
-import wooga.gradle.version.VersionScheme
+import wooga.gradle.version.VersionSchemes
 
 //TODO: this should extend PrivatePluginsPluginSpec?
 class PluginsPluginSpec extends ProjectSpec {
@@ -266,9 +266,9 @@ class PluginsPluginSpec extends ProjectSpec {
         VersionPluginExtension versionExt = project.extensions.getByType(VersionPluginExtension)
         versionExt != null
         and: "Version scheme to be semver2"
-        versionExt.versionScheme.get() == VersionScheme.semver2
+        versionExt.versionScheme.get() == VersionSchemes.semver2
         and: "Version code scheme to be releaseCount"
-        versionExt.versionCodeScheme.get() == VersionCodeScheme.releaseCount
+        versionExt.versionCodeScheme.get() == VersionCodeSchemes.releaseCount
     }
 
     def "override version extension default values with custom ones"() {
@@ -279,12 +279,12 @@ class PluginsPluginSpec extends ProjectSpec {
         VersionPluginExtension versionExt = project.extensions.getByType(VersionPluginExtension)
 
         when: "setting extension properties to distinct values"
-        versionExt.versionScheme("staticMarker")
-        versionExt.versionCodeScheme("releaseCountBasic")
+        versionExt.versionScheme.set(VersionSchemes.staticMarker)
+        versionExt.versionCodeScheme.set(VersionCodeSchemes.releaseCountBasic)
 
         then: "values should be the ones that has been set"
-        versionExt.versionScheme.get() == VersionScheme.staticMarker
-        versionExt.versionCodeScheme.get() == VersionCodeScheme.releaseCountBasic
+        versionExt.versionScheme.get() == VersionSchemes.staticMarker
+        versionExt.versionCodeScheme.get() == VersionCodeSchemes.releaseCountBasic
     }
 
     def "configures github publish task"() {

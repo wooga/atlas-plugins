@@ -19,10 +19,10 @@ import wooga.gradle.githubReleaseNotes.GithubReleaseNotesPlugin
 import wooga.gradle.githubReleaseNotes.tasks.GenerateReleaseNotes
 import wooga.gradle.plugins.releasenotes.ReleaseNotesStrategy
 import wooga.gradle.plugins.sonarqube.SonarQubeConfiguration
-import wooga.gradle.version.VersionCodeScheme
+import wooga.gradle.version.VersionCodeSchemes
 import wooga.gradle.version.VersionPlugin
 import wooga.gradle.version.VersionPluginExtension
-import wooga.gradle.version.VersionScheme
+import wooga.gradle.version.VersionSchemes
 
 class PrivatePluginsPlugin implements Plugin<Project> {
 
@@ -51,8 +51,8 @@ class PrivatePluginsPlugin implements Plugin<Project> {
     private static void configureVersionPlugin(Project project) {
         def versionExt = project.extensions.findByType(VersionPluginExtension)
         if (versionExt) {
-            versionExt.versionScheme.set(VersionScheme.semver2)
-            versionExt.versionCodeScheme.set(VersionCodeScheme.releaseCount)
+            versionExt.versionScheme.set(VersionSchemes.semver2)
+            versionExt.versionCodeScheme.set(VersionCodeSchemes.releaseCount)
         }
     }
 
