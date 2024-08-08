@@ -62,7 +62,7 @@ class LocalPluginsPlugin implements Plugin<Project> {
         def testTask = project.tasks.named(JavaPlugin.TEST_TASK_NAME, Test)
         project.tasks.withType(Test).configureEach { Test test -> test.useJUnitPlatform() }
 
-        configureSourceCompatibility(project, JavaVersion.VERSION_1_8)
+        configureSourceCompatibility(project, JavaVersion.VERSION_11)
         configureGroovyDocsTask(project)
         configureJacocoTestReport(project, integrationTestTask, testTask)
         configureSonarQubeExtension(project, SonarQubeConfiguration.withEnvVarPropertyFallback(project))
